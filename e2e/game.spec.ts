@@ -34,6 +34,7 @@ test('starts the mobile Game Session and exposes the first Board', async ({ page
   await expect(page.getByText('Score', { exact: true })).toBeVisible()
   await expect(page.getByText('Time', { exact: true })).toBeVisible()
   await expect(page.locator('button.card-button')).toHaveCount(4)
+  await expect(page.locator('.board-layout')).toHaveAttribute('data-board-layout', '2x2')
 
   await page.locator('button.card-button').first().click()
   await expect(page.locator('button.card-button').first()).toHaveAttribute('aria-pressed', 'true')
@@ -88,6 +89,7 @@ test('advances from the first Board to the six-card Round', async ({ page }) => 
   await expect(page.getByText('Round 2')).toBeVisible()
   await page.clock.fastForward(800)
   await expect(cards).toHaveCount(6)
+  await expect(page.locator('.board-layout')).toHaveAttribute('data-board-layout', '2x3')
 })
 
 test('keeps the game surface centered at 9:16 on desktop', async ({ page }) => {

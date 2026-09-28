@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   type Card,
   createGameSession,
+  getBoardLayout,
   type GameAction,
   type GameSession,
   type GameState,
@@ -34,12 +35,6 @@ const CHARACTER_IMAGES: Record<Card['character'], string> = {
 }
 
 type Feedback = { kind: 'match' | 'mismatch'; scoreDeltaLabel: string; id: number } | null
-
-function boardColumns(cardCount: number): number {
-  if (cardCount <= 4) return 2
-  if (cardCount <= 6) return 3
-  return 4
-}
 
 function formatTime(remainingMs: number): string {
   const totalSeconds = Math.ceil(remainingMs / 1000)
@@ -298,7 +293,7 @@ export default function App() {
     setFeedback(null)
   }
 
-  const columns = useMemo(() => boardColumns(state.board.length), [state.board.length])
+  const boardLayout = getBoardLayout(state.round)
   const cardsDisabled = state.phase !== 'playing'
 
   return (
@@ -309,7 +304,11 @@ export default function App() {
           <Hud state={state} feedback={feedback} />
           <div className="board-wrap">
             {state.board.length > 0 && (
-              <div className="board-layout" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+              <div
+                className="board-layout"
+                data-board-layout={`${boardLayout.rows}x${boardLayout.columns}`}
+                style={{ gridTemplateColumns: `repeat(${boardLayout.columns}, minmax(0, 1fr))` }}
+              >
                 {state.board.map((card, index) => (
                   <CardButton
                     key={card.id}

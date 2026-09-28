@@ -1,7 +1,16 @@
 export const GAME_DURATION_MS = 120_000
+export const ROUND_LAYOUTS = [
+  { rows: 2, columns: 2, cardCount: 4 },
+  { rows: 2, columns: 3, cardCount: 6 },
+  { rows: 2, columns: 4, cardCount: 8 },
+  { rows: 3, columns: 4, cardCount: 12 },
+  { rows: 4, columns: 4, cardCount: 16 },
+] as const
+
 export const ROUND_CARD_COUNTS = [4, 6, 8, 12, 16] as const
 
-export type BoardSize = (typeof ROUND_CARD_COUNTS)[number]
+export type BoardSize = (typeof ROUND_LAYOUTS)[number]['cardCount']
+export type BoardLayout = (typeof ROUND_LAYOUTS)[number]
 export type CatCharacterId =
   | 'alien'
   | 'cowboy'
@@ -85,8 +94,13 @@ function shuffle<T>(items: T[], random: () => number): T[] {
   return shuffled
 }
 
+export function getBoardLayout(round: number): BoardLayout {
+  const roundIndex = Math.min(Math.max(Math.floor(round), 1) - 1, ROUND_LAYOUTS.length - 1)
+  return ROUND_LAYOUTS[roundIndex]
+}
+
 function createBoard(round: number, random: () => number): Card[] {
-  const boardSize = ROUND_CARD_COUNTS[Math.min(round - 1, ROUND_CARD_COUNTS.length - 1)]
+  const boardSize = getBoardLayout(round).cardCount
   const characterCount = boardSize / 2
   const characters = shuffle(CAT_CHARACTERS, random)
 

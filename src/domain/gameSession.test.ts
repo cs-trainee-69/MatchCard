@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { createGameSession } from './gameSession'
+import { createGameSession, getBoardLayout } from './gameSession'
+
+describe('Board layout', () => {
+  it('uses the requested rows by columns layout for each round', () => {
+    const layouts = [1, 2, 3, 4, 5, 6].map((round) => {
+      const { rows, columns } = getBoardLayout(round)
+      return `${rows}x${columns}`
+    })
+
+    expect(layouts).toEqual(['2x2', '2x3', '2x4', '3x4', '4x4', '4x4'])
+  })
+})
 
 describe('Game Session start', () => {
   it('starts with a four-card Board and does not spend time during countdown', () => {
