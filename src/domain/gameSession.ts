@@ -36,6 +36,18 @@ export type GamePhase =
 type ResumablePhase = 'first-turn-hint' | 'playing' | 'resolving-mismatch' | 'transitioning-round'
 type PausablePhase = ResumablePhase | 'countdown'
 
+const CLOCK_RUNNING_PHASES: readonly GamePhase[] = [
+  'countdown',
+  'first-turn-hint',
+  'playing',
+  'resolving-mismatch',
+  'transitioning-round',
+]
+
+export function isClockRunningPhase(phase: GamePhase): phase is PausablePhase {
+  return CLOCK_RUNNING_PHASES.includes(phase)
+}
+
 export type Card = {
   id: string
   character: CatCharacterId
@@ -265,14 +277,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
         }
       }
 
-      if (
-        action.type === 'pause' &&
-        (state.phase === 'countdown' ||
-          state.phase === 'first-turn-hint' ||
-          state.phase === 'playing' ||
-          state.phase === 'resolving-mismatch' ||
-          state.phase === 'transitioning-round')
-      ) {
+      if (action.type === 'pause' && isClockRunningPhase(state.phase)) {
         state = {
           ...state,
           phase: 'paused',

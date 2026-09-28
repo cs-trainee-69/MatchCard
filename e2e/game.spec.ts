@@ -90,7 +90,18 @@ test('scores Match and Mismatch through the visible Board', async ({ page }) => 
   await cards.nth(groups[0][0]).click()
   await cards.nth(groups[0][1]).click()
   await expect(page.locator('.hud-score > strong')).toHaveText('10')
+  const feedback = page.locator('.feedback-toast')
   await expect(page.getByText('MATCH!')).toBeVisible()
+  const frameBox = await page.locator('.game-frame').boundingBox()
+  const scoreBoxAfter = await page.locator('.hud-score').boundingBox()
+  const feedbackBox = await feedback.boundingBox()
+  expect(frameBox).not.toBeNull()
+  expect(scoreBoxAfter).not.toBeNull()
+  expect(feedbackBox).not.toBeNull()
+  expect(feedbackBox!.x).toBeGreaterThanOrEqual(frameBox!.x)
+  expect(feedbackBox!.x + feedbackBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width)
+  expect(scoreBoxAfter!.x).toBeGreaterThanOrEqual(frameBox!.x)
+  expect(scoreBoxAfter!.x + scoreBoxAfter!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width)
 })
 
 test('advances from the first Board to the six-card Round', async ({ page }) => {
@@ -109,6 +120,39 @@ test('advances from the first Board to the six-card Round', async ({ page }) => 
   await expect(page.locator('.board-layout')).toHaveAttribute('data-board-layout', '2x3')
 })
 
+test('keeps every planned Board layout usable through Round 5', async ({ page }) => {
+  await startPlaying(page)
+  const expectedBoards = [
+    { count: 4, layout: '2x2' },
+    { count: 6, layout: '2x3' },
+    { count: 8, layout: '2x4' },
+    { count: 12, layout: '3x4' },
+    { count: 16, layout: '4x4' },
+  ]
+
+  for (const [index, expected] of expectedBoards.entries()) {
+    const cards = page.locator('button.card-button')
+    await expect(cards).toHaveCount(expected.count)
+    await expect(page.locator('.board-layout')).toHaveAttribute('data-board-layout', expected.layout)
+
+    const frameBox = await page.locator('.game-frame').boundingBox()
+    const lastCardBox = await cards.last().boundingBox()
+    expect(frameBox).not.toBeNull()
+    expect(lastCardBox).not.toBeNull()
+    expect(lastCardBox!.x + lastCardBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width + 1)
+    expect(lastCardBox!.y + lastCardBox!.height).toBeLessThanOrEqual(frameBox!.y + frameBox!.height + 1)
+
+    if (index === expectedBoards.length - 1) break
+
+    const groups = await cardGroups(page)
+    for (const group of groups) {
+      await cards.nth(group[0]).click()
+      await cards.nth(group[1]).click()
+    }
+    await page.clock.fastForward(800)
+  }
+})
+
 test('keeps a complete centered 9:16 surface in mobile landscape', async ({ page }) => {
   await page.setViewportSize({ width: 851, height: 393 })
   await page.goto('/')
@@ -121,6 +165,33 @@ test('keeps a complete centered 9:16 surface in mobile landscape', async ({ page
   expect(box!.height).toBeLessThanOrEqual(393)
   expect(Math.abs(box!.x + box!.width / 2 - 425.5)).toBeLessThan(2)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(851)
+
+  await page.getByRole('button', { name: 'แตะเพื่อเริ่ม' }).click()
+  await page.clock.fastForward(4200)
+  const firstCard = page.locator('button.card-button').first()
+  const firstCardBox = await firstCard.boundingBox()
+  expect(firstCardBox).not.toBeNull()
+  expect(firstCardBox!.width).toBeGreaterThanOrEqual(40)
+  await firstCard.click()
+  await expect(firstCard).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('keeps a small portrait Board inside the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'แตะเพื่อเริ่ม' }).click()
+  await page.clock.fastForward(4200)
+
+  const viewport = page.viewportSize()
+  const frameBox = await page.locator('.game-frame').boundingBox()
+  const boardBox = await page.locator('.board-layout').boundingBox()
+  expect(viewport).not.toBeNull()
+  expect(frameBox).not.toBeNull()
+  expect(boardBox).not.toBeNull()
+  expect(boardBox!.x).toBeGreaterThanOrEqual(frameBox!.x)
+  expect(boardBox!.x + boardBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width)
+  expect(boardBox!.y + boardBox!.height).toBeLessThanOrEqual(frameBox!.y + frameBox!.height)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport!.width)
 })
 
 test('keeps the game surface centered at 9:16 on desktop', async ({ page }) => {

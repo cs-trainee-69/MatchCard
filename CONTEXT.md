@@ -41,7 +41,7 @@ _Avoid_: Best Score, Record
 _Avoid_: End Screen, Summary
 
 **HUD**:
-แผงข้อมูลระหว่าง Game Session ที่แสดง Round, Score, Time และทางเข้าการตั้งค่าเสียง
+แผงข้อมูลด้านบนระหว่าง Game Session ที่แสดง Round, Score และ Time ส่วนปุ่มตั้งค่าเสียงเป็น control แยกอยู่บริเวณ Footer ด้านขวาล่าง
 _Avoid_: Hub, Status Bar
 
 **Start Prompt**:

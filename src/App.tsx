@@ -3,6 +3,7 @@ import {
   type Card,
   createGameSession,
   getBoardLayout,
+  isClockRunningPhase,
   type GameAction,
   type GameSession,
   type GameState,
@@ -41,16 +42,6 @@ function formatTime(remainingMs: number): string {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = String(totalSeconds % 60).padStart(2, '0')
   return `${minutes}:${seconds}`
-}
-
-function isClockRunningPhase(phase: GameState['phase']): boolean {
-  return (
-    phase === 'countdown' ||
-    phase === 'first-turn-hint' ||
-    phase === 'playing' ||
-    phase === 'resolving-mismatch' ||
-    phase === 'transitioning-round'
-  )
 }
 
 function useGameClock(session: GameSession, setState: (state: GameState) => void, phase: GameState['phase']): void {
