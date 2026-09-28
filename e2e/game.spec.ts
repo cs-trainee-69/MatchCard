@@ -21,6 +21,16 @@ async function cardGroups(page: Page): Promise<number[][]> {
   return [...groups.values()]
 }
 
+async function completeCurrentBoard(page: Page) {
+  const cards = page.locator('button.card-button')
+  const groups = await cardGroups(page)
+  for (const group of groups) {
+    await cards.nth(group[0]).click()
+    await cards.nth(group[1]).click()
+  }
+  await page.clock.fastForward(800)
+}
+
 async function advanceToFinalBoard(page: Page) {
   await startPlaying(page)
   const expectedCounts = [4, 6, 8, 12, 16]
@@ -28,12 +38,7 @@ async function advanceToFinalBoard(page: Page) {
   for (let roundIndex = 0; roundIndex < 4; roundIndex += 1) {
     const cards = page.locator('button.card-button')
     await expect(cards).toHaveCount(expectedCounts[roundIndex])
-    const groups = await cardGroups(page)
-    for (const group of groups) {
-      await cards.nth(group[0]).click()
-      await cards.nth(group[1]).click()
-    }
-    await page.clock.fastForward(800)
+    await completeCurrentBoard(page)
   }
 
   await expect(page.locator('button.card-button')).toHaveCount(16)
@@ -177,12 +182,7 @@ test('keeps every planned Board layout usable through Round 5', async ({ page })
 
     if (index === expectedBoards.length - 1) break
 
-    const groups = await cardGroups(page)
-    for (const group of groups) {
-      await cards.nth(group[0]).click()
-      await cards.nth(group[1]).click()
-    }
-    await page.clock.fastForward(800)
+    await completeCurrentBoard(page)
   }
 })
 
@@ -211,6 +211,7 @@ test('keeps a complete centered 9:16 surface in mobile landscape', async ({ page
 
 for (const viewport of [
   { name: 'portrait', width: 393, height: 852 },
+  { name: 'small portrait', width: 320, height: 640 },
   { name: 'landscape', width: 851, height: 393 },
   { name: 'desktop', width: 1280, height: 720 },
 ]) {
