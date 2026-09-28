@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { createGameSession, getBoardLayout } from './gameSession'
+import { createGameSession, getBoardLayout, type GameSession } from './gameSession'
+
+function startPlaying(session: GameSession) {
+  session.dispatch({ type: 'begin' })
+  session.dispatch({ type: 'tick', deltaMs: 3000 })
+  session.dispatch({ type: 'tick', deltaMs: 1200 })
+}
 
 describe('Board layout', () => {
   it('uses the requested rows by columns layout for each round', () => {
@@ -25,14 +31,37 @@ describe('Game Session start', () => {
     expect(session.getState().board).toHaveLength(4)
 
     session.dispatch({ type: 'tick', deltaMs: 3000 })
+    expect(session.getState().phase).toBe('first-turn-hint')
+    expect(session.getState().firstTurnHintMs).toBe(1200)
+    expect(session.getState().remainingMs).toBe(120000)
+
+    session.dispatch({ type: 'tick', deltaMs: 1200 })
     expect(session.getState().phase).toBe('playing')
+    expect(session.getState().remainingMs).toBe(120000)
+  })
+
+  it('shows the First-Turn Hint once and locks cards until it ends', () => {
+    const session = createGameSession({ random: () => 0 })
+    session.dispatch({ type: 'begin' })
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+
+    expect(session.getState().phase).toBe('first-turn-hint')
+    expect(session.getState().remainingMs).toBe(120000)
+    session.dispatch({ type: 'select-card', cardId: session.getState().board[0].id })
+    expect(session.getState().selectedCardIds).toEqual([])
+
+    session.dispatch({ type: 'tick', deltaMs: 1199 })
+    expect(session.getState().phase).toBe('first-turn-hint')
+    expect(session.getState().firstTurnHintMs).toBe(1)
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().firstTurnHintMs).toBeNull()
     expect(session.getState().remainingMs).toBe(120000)
   })
 
   it('awards 10 Score and locks a matched pair on the Board', () => {
     const session = createGameSession({ random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
 
     const firstCard = session.getState().board[0]
     const matchingCard = session.getState().board.find(
@@ -54,8 +83,7 @@ describe('Game Session start', () => {
 
   it('deducts 1 Score and briefly reveals a Mismatch before turning it back', () => {
     const session = createGameSession({ random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
 
     const [firstCard, secondCard] = session.getState().board
     expect(firstCard.character).not.toBe(secondCard.character)
@@ -88,8 +116,7 @@ describe('Game Session start', () => {
 
   it('deducts one Score from a positive total for a Mismatch', () => {
     const session = createGameSession({ random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
     const characters = [...new Set(session.getState().board.map((card) => card.character))]
     const firstPair = session.getState().board.filter((card) => card.character === characters[0])
     session.dispatch({ type: 'select-card', cardId: firstPair[0].id })
@@ -108,8 +135,7 @@ describe('Game Session start', () => {
 
   it('continues counting down while a Mismatch is being revealed', () => {
     const session = createGameSession({ durationMs: 1000, random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
     const [firstCard, secondCard] = session.getState().board
 
     session.dispatch({ type: 'select-card', cardId: firstCard.id })
@@ -126,8 +152,7 @@ describe('Game Session start', () => {
 
   it('advances to the next Board after every pair in the current Board is matched', () => {
     const session = createGameSession({ random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
 
     const pairs = [...new Set(session.getState().board.map((card) => card.character))]
     for (const character of pairs) {
@@ -152,8 +177,7 @@ describe('Game Session start', () => {
 
   it('finishes the Game Session at zero and preserves the best High Score', () => {
     const session = createGameSession({ durationMs: 1000, highScore: 7, random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
     session.dispatch({ type: 'tick', deltaMs: 999 })
 
     expect(session.getState().phase).toBe('playing')
@@ -168,8 +192,7 @@ describe('Game Session start', () => {
 
   it('resolves a second-card Mismatch accepted before zero before finishing', () => {
     const session = createGameSession({ durationMs: 1, random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
     const [firstCard, secondCard] = session.getState().board
 
     session.dispatch({ type: 'select-card', cardId: firstCard.id })
@@ -185,8 +208,7 @@ describe('Game Session start', () => {
 
   it('updates High Score when the finished Score beats the saved value', () => {
     const session = createGameSession({ durationMs: 1000, highScore: 7, random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
     const [firstCard, matchingCard] = session.getState().board.filter(
       (card, _, board) => card.character === board[0].character,
     )
@@ -201,8 +223,7 @@ describe('Game Session start', () => {
 
   it('caps Board size at sixteen cards while continuing to increase the Round number', () => {
     const session = createGameSession({ random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
     const expectedSizes = [4, 6, 8, 12, 16]
 
     for (const expectedSize of expectedSizes) {
@@ -226,8 +247,7 @@ describe('Game Session start', () => {
 
   it('pauses active play and resumes with a fresh countdown without spending time', () => {
     const session = createGameSession({ random: () => 0 })
-    session.dispatch({ type: 'begin' })
-    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    startPlaying(session)
     const firstCard = session.getState().board[0]
     session.dispatch({ type: 'select-card', cardId: firstCard.id })
     session.dispatch({ type: 'tick', deltaMs: 500 })
@@ -261,7 +281,38 @@ describe('Game Session start', () => {
     session.dispatch({ type: 'resume' })
     expect(session.getState().countdownMs).toBe(3000)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
+    expect(session.getState().phase).toBe('first-turn-hint')
+    session.dispatch({ type: 'tick', deltaMs: 1200 })
     expect(session.getState().phase).toBe('playing')
+    expect(session.getState().remainingMs).toBe(120000)
+  })
+
+  it('does not repeat the First-Turn Hint after resuming active play', () => {
+    const session = createGameSession({ random: () => 0 })
+    startPlaying(session)
+
+    session.dispatch({ type: 'pause' })
+    session.dispatch({ type: 'resume' })
+    expect(session.getState().phase).toBe('countdown')
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().firstTurnHintMs).toBeNull()
+    expect(session.getState().remainingMs).toBe(120000)
+  })
+
+  it('does not repeat the First-Turn Hint after pausing during the Hint', () => {
+    const session = createGameSession({ random: () => 0 })
+    session.dispatch({ type: 'begin' })
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    session.dispatch({ type: 'pause' })
+    session.dispatch({ type: 'resume' })
+
+    expect(session.getState().phase).toBe('countdown')
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().firstTurnHintMs).toBeNull()
     expect(session.getState().remainingMs).toBe(120000)
   })
 })

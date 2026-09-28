@@ -1,4 +1,5 @@
 export const GAME_DURATION_MS = 120_000
+export const FIRST_TURN_HINT_MS = 1_200
 export const ROUND_LAYOUTS = [
   { rows: 2, columns: 2, cardCount: 4 },
   { rows: 2, columns: 3, cardCount: 6 },
@@ -25,13 +26,14 @@ export type CatCharacterId =
 export type GamePhase =
   | 'ready'
   | 'countdown'
+  | 'first-turn-hint'
   | 'playing'
   | 'resolving-mismatch'
   | 'transitioning-round'
   | 'paused'
   | 'finished'
 
-type ResumablePhase = 'playing' | 'resolving-mismatch' | 'transitioning-round'
+type ResumablePhase = 'first-turn-hint' | 'playing' | 'resolving-mismatch' | 'transitioning-round'
 type PausablePhase = ResumablePhase | 'countdown'
 
 export type Card = {
@@ -48,6 +50,7 @@ export type GameState = {
   highScore: number
   remainingMs: number
   countdownMs: number | null
+  firstTurnHintMs: number | null
   selectedCardIds: string[]
   pendingResolutionMs: number | null
   transitionRemainingMs: number | null
@@ -123,6 +126,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
     highScore: options.highScore ?? 0,
     remainingMs: durationMs,
     countdownMs: null,
+    firstTurnHintMs: null,
     selectedCardIds: [],
     pendingResolutionMs: null,
     transitionRemainingMs: null,
@@ -139,22 +143,36 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
           phase: 'countdown',
           board: createBoard(1, random),
           countdownMs: 3_000,
+          firstTurnHintMs: null,
           selectedCardIds: [],
           pendingResolutionMs: null,
           transitionRemainingMs: null,
-          countdownTarget: 'playing',
+          countdownTarget: 'first-turn-hint',
           pausedFrom: null,
         }
       }
 
       if (action.type === 'tick' && state.phase === 'countdown') {
         const countdownMs = Math.max(0, state.countdownMs! - action.deltaMs)
+        const countdownTarget = state.countdownTarget!
+        const phase = countdownMs === 0 ? countdownTarget : 'countdown'
         state = {
           ...state,
-          phase: countdownMs === 0 ? state.countdownTarget! : 'countdown',
+          phase,
           countdownMs: countdownMs === 0 ? null : countdownMs,
+          firstTurnHintMs: phase === 'first-turn-hint' ? FIRST_TURN_HINT_MS : state.firstTurnHintMs,
           countdownTarget: countdownMs === 0 ? null : state.countdownTarget,
           pausedFrom: countdownMs === 0 ? null : state.pausedFrom,
+        }
+        return state
+      }
+
+      if (action.type === 'tick' && state.phase === 'first-turn-hint') {
+        const firstTurnHintMs = Math.max(0, state.firstTurnHintMs! - action.deltaMs)
+        state = {
+          ...state,
+          phase: firstTurnHintMs === 0 ? 'playing' : 'first-turn-hint',
+          firstTurnHintMs: firstTurnHintMs === 0 ? null : firstTurnHintMs,
         }
         return state
       }
@@ -250,6 +268,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
       if (
         action.type === 'pause' &&
         (state.phase === 'countdown' ||
+          state.phase === 'first-turn-hint' ||
           state.phase === 'playing' ||
           state.phase === 'resolving-mismatch' ||
           state.phase === 'transitioning-round')
@@ -262,11 +281,18 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
       }
 
       if (action.type === 'resume' && state.phase === 'paused' && state.pausedFrom) {
+        const countdownTarget =
+          state.pausedFrom === 'countdown'
+            ? state.countdownTarget ?? 'playing'
+            : state.pausedFrom === 'first-turn-hint'
+              ? 'playing'
+              : state.pausedFrom
         state = {
           ...state,
           phase: 'countdown',
           countdownMs: 3_000,
-          countdownTarget: state.pausedFrom === 'countdown' ? 'playing' : state.pausedFrom,
+          firstTurnHintMs: null,
+          countdownTarget,
         }
       }
 

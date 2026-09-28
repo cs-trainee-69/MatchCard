@@ -39,3 +39,15 @@ _Avoid_: Best Score, Record
 **Game Result**:
 สรุปผลเมื่อ Game Session สิ้นสุด ประกอบด้วย Score, High Score และ Round สูงสุดที่ผู้เล่นไปถึง
 _Avoid_: End Screen, Summary
+
+**HUD**:
+แผงข้อมูลระหว่าง Game Session ที่แสดง Round, Score, Time และทางเข้าการตั้งค่าเสียง
+_Avoid_: Hub, Status Bar
+
+**Start Prompt**:
+ข้อความเชิญให้ผู้เล่นเริ่ม Game Session ซึ่งแสดงก่อน Countdown โดยไม่มีข้อมูลประกอบที่ไม่จำเป็น
+_Avoid_: Start Screen, Intro Card
+
+**First-Turn Hint**:
+ข้อความแนะนำให้จับคู่ไพ่ซึ่งแสดงครั้งเดียวก่อนการเลือกไพ่ครั้งแรกของ Game Session
+_Avoid_: Tutorial, Round Hint

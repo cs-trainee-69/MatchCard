@@ -3,10 +3,13 @@ import { expect, type Page, test } from '@playwright/test'
 async function startPlaying(page: Page) {
   await page.clock.install()
   await page.goto('/')
-  await page.getByRole('button', { name: 'Tap to start' }).click()
-  await expect(page.getByText('Get ready')).toBeVisible()
+  await page.getByRole('button', { name: 'แตะเพื่อเริ่ม' }).click()
+  await expect(page.locator('.countdown-number')).toHaveText('3')
   await page.clock.fastForward(3000)
-  await expect(page.getByText('Get ready')).toBeHidden()
+  await expect(page.getByText('จับคู่ไพ่', { exact: true })).toBeVisible()
+  await expect(page.locator('.hud-time > strong')).toHaveText('2:00')
+  await page.clock.fastForward(1200)
+  await expect(page.getByText('จับคู่ไพ่', { exact: true })).toBeHidden()
 }
 
 async function cardGroups(page: Page): Promise<number[][]> {
@@ -22,14 +25,28 @@ test('starts the mobile Game Session and exposes the first Board', async ({ page
   await page.clock.install()
   await page.goto('/')
 
-  await expect(page.getByRole('button', { name: 'Tap to start' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'แตะเพื่อเริ่ม' })).toBeVisible()
   await expect(page.locator('.game-frame')).toBeVisible()
+  await expect(page.locator('.overlay-start .overlay-card')).toHaveCount(0)
+  await expect(page.locator('.sound-button .sound-icon')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Tap to start' }).click()
-  await expect(page.getByText('Get ready')).toBeVisible()
+  const viewport = page.viewportSize()
+  const frameBox = await page.locator('.game-frame').boundingBox()
+  expect(viewport).not.toBeNull()
+  expect(frameBox).not.toBeNull()
+  expect(Math.abs(frameBox!.width - viewport!.width)).toBeLessThanOrEqual(1)
+  expect(Math.abs(frameBox!.height - viewport!.height)).toBeLessThanOrEqual(1)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport!.width)
+
+  await page.getByRole('button', { name: 'แตะเพื่อเริ่ม' }).click()
+  await expect(page.locator('.countdown-number')).toHaveText('3')
   await page.clock.fastForward(3000)
 
-  await expect(page.getByText('Get ready')).toBeHidden()
+  await expect(page.getByText('จับคู่ไพ่', { exact: true })).toBeVisible()
+  await expect(page.locator('.hud-time > strong')).toHaveText('2:00')
+  await expect(page.locator('button.card-button').first()).toBeDisabled()
+  await page.clock.fastForward(1200)
+  await expect(page.getByText('จับคู่ไพ่', { exact: true })).toBeHidden()
   await expect(page.getByText('Round', { exact: true })).toBeVisible()
   await expect(page.getByText('Score', { exact: true })).toBeVisible()
   await expect(page.getByText('Time', { exact: true })).toBeVisible()
@@ -56,7 +73,7 @@ test('finishes at zero and offers a replay result', async ({ page }) => {
   await expect(page.locator('.result-grid strong').nth(1)).toHaveText('0')
   await expect(page.locator('.result-grid strong').nth(2)).toHaveText('1')
   await page.getByRole('button', { name: 'Play again' }).click()
-  await expect(page.getByRole('button', { name: 'Tap to start' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'แตะเพื่อเริ่ม' })).toBeVisible()
 })
 
 test('scores Match and Mismatch through the visible Board', async ({ page }) => {
@@ -92,6 +109,20 @@ test('advances from the first Board to the six-card Round', async ({ page }) => 
   await expect(page.locator('.board-layout')).toHaveAttribute('data-board-layout', '2x3')
 })
 
+test('keeps a complete centered 9:16 surface in mobile landscape', async ({ page }) => {
+  await page.setViewportSize({ width: 851, height: 393 })
+  await page.goto('/')
+  const frame = page.locator('.game-frame')
+  const box = await frame.boundingBox()
+
+  expect(box).not.toBeNull()
+  expect(Math.abs((box!.width / box!.height) - 9 / 16)).toBeLessThan(0.01)
+  expect(box!.width).toBeLessThanOrEqual(851)
+  expect(box!.height).toBeLessThanOrEqual(393)
+  expect(Math.abs(box!.x + box!.width / 2 - 425.5)).toBeLessThan(2)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(851)
+})
+
 test('keeps the game surface centered at 9:16 on desktop', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('/')
@@ -116,9 +147,9 @@ test('pauses on document visibility changes and resumes with a countdown', async
     Object.defineProperty(document, 'hidden', { configurable: true, value: false })
     document.dispatchEvent(new Event('visibilitychange'))
   })
-  await expect(page.getByText('Get ready')).toBeVisible()
+  await expect(page.locator('.countdown-number')).toHaveText('3')
   await page.clock.fastForward(3000)
-  await expect(page.getByText('Get ready')).toBeHidden()
+  await expect(page.getByText('จับคู่ไพ่', { exact: true })).toBeHidden()
 })
 
 test('persists a new High Score for the next Game Session', async ({ page }) => {
@@ -133,6 +164,6 @@ test('persists a new High Score for the next Game Session', async ({ page }) => 
   await expect(page.locator('.result-grid strong').nth(1)).toHaveText('10')
 
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Tap to start' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'แตะเพื่อเริ่ม' })).toBeVisible()
   await expect(page.evaluate(() => window.localStorage.getItem('cat-card.high-score'))).resolves.toBe('10')
 })

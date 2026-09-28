@@ -43,22 +43,28 @@ function formatTime(remainingMs: number): string {
   return `${minutes}:${seconds}`
 }
 
-function useGameClock(session: GameSession, setState: (state: GameState) => void): void {
+function isClockRunningPhase(phase: GameState['phase']): boolean {
+  return (
+    phase === 'countdown' ||
+    phase === 'first-turn-hint' ||
+    phase === 'playing' ||
+    phase === 'resolving-mismatch' ||
+    phase === 'transitioning-round'
+  )
+}
+
+function useGameClock(session: GameSession, setState: (state: GameState) => void, phase: GameState['phase']): void {
   useEffect(() => {
+    if (!isClockRunningPhase(phase)) return
+
     const interval = window.setInterval(() => {
-      const phase = session.getState().phase
-      if (
-        phase === 'countdown' ||
-        phase === 'playing' ||
-        phase === 'resolving-mismatch' ||
-        phase === 'transitioning-round'
-      ) {
+      if (isClockRunningPhase(session.getState().phase)) {
         setState(session.dispatch({ type: 'tick', deltaMs: 100 }))
       }
     }, 100)
 
     return () => window.clearInterval(interval)
-  }, [session, setState])
+  }, [session, setState, phase])
 }
 
 function CardButton({
@@ -102,16 +108,18 @@ function Hud({ state, feedback }: { state: GameState; feedback: Feedback }) {
     <header className="hud">
       <div className="hud-stat hud-round">
         <span className="hud-label">Round</span>
-        <strong>{state.round}</strong>
+        <strong className="hud-value">{state.round}</strong>
       </div>
       <div className="hud-stat hud-score">
         <span className="hud-label">Score</span>
-        <strong>{state.score}</strong>
+        <strong key={feedback?.id ?? 'score'} className="hud-value score-value">
+          {state.score}
+        </strong>
         <FeedbackToast feedback={feedback} />
       </div>
       <div className={`hud-stat hud-time ${isWarning ? 'is-warning' : ''}`}>
         <span className="hud-label">Time</span>
-        <strong>{formatTime(state.remainingMs)}</strong>
+        <strong className="hud-value">{formatTime(state.remainingMs)}</strong>
       </div>
     </header>
   )
@@ -131,15 +139,9 @@ function FeedbackToast({ feedback }: { feedback: Feedback }) {
 function StartOverlay({ onStart }: { onStart: () => void }) {
   return (
     <div className="overlay overlay-start">
-      <div className="overlay-card intro-card">
-        <div className="paw-mark" aria-hidden="true">🐾</div>
-        <p className="eyebrow">A quick memory challenge</p>
-        <h1>Cat Card</h1>
-        <p className="overlay-copy">Find every pair before the clock runs out.</p>
-        <button className="primary-button" type="button" onClick={onStart}>
-          Tap to start
-        </button>
-      </div>
+      <button className="start-prompt" type="button" lang="th" onClick={onStart}>
+        แตะเพื่อเริ่ม
+      </button>
     </div>
   )
 }
@@ -148,8 +150,24 @@ function CountdownOverlay({ countdownMs }: { countdownMs: number | null }) {
   return (
     <div className="overlay overlay-countdown" aria-live="assertive">
       <div className="countdown-number">{Math.max(1, Math.ceil((countdownMs ?? 0) / 1000))}</div>
-      <p>Get ready</p>
     </div>
+  )
+}
+
+function FirstTurnHintOverlay() {
+  return (
+    <div className="overlay overlay-first-turn-hint" role="status" aria-live="polite">
+      <p className="first-turn-hint" lang="th">จับคู่ไพ่</p>
+    </div>
+  )
+}
+
+function SoundIcon({ enabled }: { enabled: boolean }) {
+  return (
+    <svg className="sound-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4 10v4h3l4 3V7l-4 3H4Z" />
+      {enabled ? <path d="M15 9.5a4 4 0 0 1 0 5" /> : <path d="m16 9 5 6m0-6-5 6" />}
+    </svg>
   )
 }
 
@@ -215,7 +233,7 @@ export default function App() {
     [session],
   )
 
-  useGameClock(session, setState)
+  useGameClock(session, setState, state.phase)
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -322,14 +340,14 @@ export default function App() {
             )}
           </div>
           <div className="game-footer">
-            <button className="sound-button" type="button" onClick={handleToggleSound} aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}>
-              <span aria-hidden="true">{soundEnabled ? '🔊' : '🔇'}</span>
-              <span>{soundEnabled ? 'Sound on' : 'Sound off'}</span>
-            </button>
             <span className="footer-hint">Match the curious cats</span>
+            <button className="sound-button" type="button" onClick={handleToggleSound} aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}>
+              <SoundIcon enabled={soundEnabled} />
+            </button>
           </div>
           {state.phase === 'ready' && <StartOverlay onStart={handleStart} />}
           {state.phase === 'countdown' && <CountdownOverlay countdownMs={state.countdownMs} />}
+          {state.phase === 'first-turn-hint' && <FirstTurnHintOverlay />}
           {state.phase === 'paused' && <PauseOverlay onResume={() => dispatch({ type: 'resume' })} />}
           {state.phase === 'transitioning-round' && (
             <div className="round-banner" role="status">Round {state.round + 1}</div>
