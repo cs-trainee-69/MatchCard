@@ -138,7 +138,7 @@ button { font: inherit; }
   .game-content { padding: clamp(12px, 3.2vw, 22px); }
 }
 
-@media (max-width: 599px) and (orientation: landscape) {
+@media (orientation: landscape) and (max-height: 600px) {
   .game-frame {
     width: min(100dvw, calc(100dvh * 9 / 16));
     height: min(100dvh, calc(100dvw * 16 / 9));
