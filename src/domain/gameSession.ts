@@ -23,6 +23,7 @@ export type GamePhase =
   | 'finished'
 
 type ResumablePhase = 'playing' | 'resolving-mismatch' | 'transitioning-round'
+type PausablePhase = ResumablePhase | 'countdown'
 
 export type Card = {
   id: string
@@ -42,7 +43,7 @@ export type GameState = {
   pendingResolutionMs: number | null
   transitionRemainingMs: number | null
   countdownTarget: ResumablePhase | null
-  pausedFrom: ResumablePhase | null
+  pausedFrom: PausablePhase | null
 }
 
 export type GameAction =
@@ -75,27 +76,26 @@ const CAT_CHARACTERS: CatCharacterId[] = [
   'witch',
 ]
 
+function shuffle<T>(items: T[], random: () => number): T[] {
+  const shuffled = [...items]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1))
+    ;[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]]
+  }
+  return shuffled
+}
+
 function createBoard(round: number, random: () => number): Card[] {
   const boardSize = ROUND_CARD_COUNTS[Math.min(round - 1, ROUND_CARD_COUNTS.length - 1)]
   const characterCount = boardSize / 2
-  const characters = [...CAT_CHARACTERS]
-
-  for (let index = characters.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1))
-    ;[characters[index], characters[swapIndex]] = [characters[swapIndex], characters[index]]
-  }
+  const characters = shuffle(CAT_CHARACTERS, random)
 
   const cards = characters.slice(0, characterCount).flatMap((character, characterIndex) => [
     { id: `${round}-${characterIndex}-a`, character, status: 'hidden' as const },
     { id: `${round}-${characterIndex}-b`, character, status: 'hidden' as const },
   ])
 
-  for (let index = cards.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(random() * (index + 1))
-    ;[cards[index], cards[swapIndex]] = [cards[swapIndex], cards[index]]
-  }
-
-  return cards
+  return shuffle(cards, random)
 }
 
 export function createGameSession(options: GameSessionOptions = {}): GameSession {
@@ -224,7 +224,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
           state = {
             ...state,
             board: resolvedBoard,
-            score: isMatch ? state.score + 10 : state.score,
+            score: isMatch ? state.score + 10 : Math.max(0, state.score - 1),
             selectedCardIds: isMatch ? [] : selectedCardIds,
             phase: boardIsComplete ? 'transitioning-round' : isMatch ? 'playing' : 'resolving-mismatch',
             pendingResolutionMs: isMatch ? null : 700,
@@ -235,7 +235,8 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
 
       if (
         action.type === 'pause' &&
-        (state.phase === 'playing' ||
+        (state.phase === 'countdown' ||
+          state.phase === 'playing' ||
           state.phase === 'resolving-mismatch' ||
           state.phase === 'transitioning-round')
       ) {
@@ -251,7 +252,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
           ...state,
           phase: 'countdown',
           countdownMs: 3_000,
-          countdownTarget: state.pausedFrom,
+          countdownTarget: state.pausedFrom === 'countdown' ? 'playing' : state.pausedFrom,
         }
       }
 

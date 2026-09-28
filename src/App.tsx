@@ -33,7 +33,7 @@ const CHARACTER_IMAGES: Record<Card['character'], string> = {
   witch: '/card/cat/witch-cat.png',
 }
 
-type Feedback = { kind: 'match' | 'mismatch'; amount: string; id: number } | null
+type Feedback = { kind: 'match' | 'mismatch'; scoreDeltaLabel: string; id: number } | null
 
 function boardColumns(cardCount: number): number {
   if (cardCount <= 4) return 2
@@ -126,8 +126,8 @@ function FeedbackToast({ feedback }: { feedback: Feedback }) {
 
   return (
     <div key={feedback.id} className={`feedback-toast feedback-${feedback.kind}`} role="status" aria-live="polite">
-      <strong>{feedback.kind === 'match' ? 'MATCH!' : 'MISS!'}</strong>
-      <span>{feedback.amount}</span>
+      <strong>{feedback.kind === 'match' ? 'MATCH!' : 'MISMATCH!'}</strong>
+      <span>{feedback.scoreDeltaLabel}</span>
     </div>
   )
 }
@@ -179,7 +179,7 @@ function ResultOverlay({ state, isNewHighScore, onReplay }: { state: GameState; 
       <div className="overlay-card result-card">
         <p className="eyebrow">Time's up</p>
         <h2>Nice work!</h2>
-        {isNewHighScore && <p className="new-record">New High Score</p>}
+        {isNewHighScore && <p className="new-high-score">New High Score</p>}
         <div className="result-grid">
           <div>
             <span className="hud-label">Score</span>
@@ -245,11 +245,11 @@ export default function App() {
     const previous = previousState.current
     if (state.score > previous.score) {
       feedbackId.current += 1
-      setFeedback({ kind: 'match', amount: '+10', id: feedbackId.current })
+      setFeedback({ kind: 'match', scoreDeltaLabel: '+10', id: feedbackId.current })
       playSound('match', soundEnabled)
     } else if (state.phase === 'resolving-mismatch' && previous.phase !== 'resolving-mismatch') {
       feedbackId.current += 1
-      setFeedback({ kind: 'mismatch', amount: '−1', id: feedbackId.current })
+      setFeedback({ kind: 'mismatch', scoreDeltaLabel: '−1', id: feedbackId.current })
       playSound('mismatch', soundEnabled)
     }
 
@@ -308,7 +308,7 @@ export default function App() {
           <Hud state={state} />
           <div className="board-wrap">
             {state.board.length > 0 && (
-              <div className="card-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+              <div className="board-layout" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
                 {state.board.map((card, index) => (
                   <CardButton
                     key={card.id}

@@ -26,8 +26,7 @@ button { font: inherit; }
 
 .game-frame {
   position: relative;
-  width: min(100%, 562px);
-  max-height: calc(100dvh - 24px);
+  width: min(100%, 562px, calc((100dvh - 24px) * 9 / 16));
   aspect-ratio: 9 / 16;
   overflow: hidden;
   border: 5px solid rgba(255, 238, 218, 0.72);
@@ -62,7 +61,7 @@ button { font: inherit; }
 .hud-stat strong { display: block; color: #fff9ec; font-size: clamp(1.04rem, 4.5vw, 1.6rem); line-height: 1; }
 
 .board-wrap { display: grid; flex: 1; place-items: center; min-height: 0; padding: clamp(12px, 4vw, 28px) 0; }
-.card-grid { display: grid; width: min(100%, 500px); max-height: 100%; gap: clamp(6px, 1.55vw, 11px); }
+.board-layout { display: grid; width: min(100%, 500px); max-height: 100%; gap: clamp(6px, 1.55vw, 11px); }
 .card-button { position: relative; width: 100%; aspect-ratio: 1; padding: 0; border: 0; border-radius: 15%; background: transparent; perspective: 900px; cursor: pointer; transition: transform 130ms ease, filter 130ms ease; }
 .card-button:not(:disabled):hover { transform: translateY(-2px) scale(1.015); filter: brightness(1.08); }
 .card-button:not(:disabled):active { transform: scale(0.97); }
@@ -101,7 +100,7 @@ button { font: inherit; }
 .feedback-toast span { font-size: clamp(1.05rem, 5vw, 1.65rem); font-weight: 900; }
 .feedback-match strong, .feedback-match span { color: #ffe296; }
 .feedback-mismatch strong, .feedback-mismatch span { color: #ffb0a9; }
-.new-record { margin: 14px 0 -3px; color: #ffe296; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; }
+.new-high-score { margin: 14px 0 -3px; color: #ffe296; font-size: 0.75rem; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; }
 .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 25px 0; }
 .result-grid > div { padding: 11px 5px; border: 1px solid rgba(255, 231, 206, 0.32); border-radius: 13px; background: rgba(27, 12, 21, 0.33); }
 .result-grid strong { display: block; margin-top: 4px; color: #fff4dd; font-size: 1.35rem; }
@@ -113,12 +112,7 @@ button { font: inherit; }
 
 @media (max-height: 680px) {
   .app-shell { padding: 6px; }
-  .game-frame { max-height: calc(100dvh - 12px); }
   .game-content { padding: 9px; }
   .board-wrap { padding: 8px 0; }
   .game-footer { min-height: 27px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }

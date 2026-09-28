@@ -18,7 +18,7 @@ describe('Game Session start', () => {
     expect(session.getState().remainingMs).toBe(120000)
   })
 
-  it('awards ten points and locks a matched pair on the Board', () => {
+  it('awards 10 Score and locks a matched pair on the Board', () => {
     const session = createGameSession({ random: () => 0 })
     session.dispatch({ type: 'begin' })
     session.dispatch({ type: 'tick', deltaMs: 3000 })
@@ -41,7 +41,7 @@ describe('Game Session start', () => {
     ])
   })
 
-  it('deducts one point and briefly reveals a Mismatch before turning it back', () => {
+  it('deducts 1 Score and briefly reveals a Mismatch before turning it back', () => {
     const session = createGameSession({ random: () => 0 })
     session.dispatch({ type: 'begin' })
     session.dispatch({ type: 'tick', deltaMs: 3000 })
@@ -73,6 +73,26 @@ describe('Game Session start', () => {
       expect.objectContaining({ status: 'hidden' }),
       expect.objectContaining({ status: 'hidden' }),
     ])
+  })
+
+  it('deducts one Score from a positive total for a Mismatch', () => {
+    const session = createGameSession({ random: () => 0 })
+    session.dispatch({ type: 'begin' })
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    const characters = [...new Set(session.getState().board.map((card) => card.character))]
+    const firstPair = session.getState().board.filter((card) => card.character === characters[0])
+    session.dispatch({ type: 'select-card', cardId: firstPair[0].id })
+    session.dispatch({ type: 'select-card', cardId: firstPair[1].id })
+    const secondPair = session.getState().board.filter((card) => card.character === characters[1])
+    session.dispatch({ type: 'select-card', cardId: secondPair[0].id })
+    session.dispatch({ type: 'select-card', cardId: secondPair[1].id })
+
+    session.dispatch({ type: 'tick', deltaMs: 800 })
+    const mismatchFirst = session.getState().board[0]
+    const mismatchSecond = session.getState().board.find((card) => card.character !== mismatchFirst.character)!
+    session.dispatch({ type: 'select-card', cardId: mismatchFirst.id })
+    session.dispatch({ type: 'select-card', cardId: mismatchSecond.id })
+    expect(session.getState().score).toBe(19)
   })
 
   it('continues counting down while a Mismatch is being revealed', () => {
@@ -198,5 +218,22 @@ describe('Game Session start', () => {
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().remainingMs).toBe(remainingBeforePause)
     expect(session.getState().selectedCardIds).toEqual([firstCard.id])
+  })
+
+  it('restarts the countdown if the document is hidden during the initial countdown', () => {
+    const session = createGameSession({ random: () => 0 })
+    session.dispatch({ type: 'begin' })
+    session.dispatch({ type: 'tick', deltaMs: 1000 })
+    session.dispatch({ type: 'pause' })
+    session.dispatch({ type: 'tick', deltaMs: 5000 })
+
+    expect(session.getState().phase).toBe('paused')
+    expect(session.getState().countdownMs).toBe(2000)
+
+    session.dispatch({ type: 'resume' })
+    expect(session.getState().countdownMs).toBe(3000)
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().remainingMs).toBe(120000)
   })
 })
