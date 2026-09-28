@@ -54,7 +54,7 @@ button { font: inherit; }
 .hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .hud-stat { min-width: 0; padding: 9px 5px 8px; text-align: center; border: 2px solid rgba(255, 238, 218, 0.45); border-radius: 13px; background: rgba(75, 37, 46, 0.86); box-shadow: inset 0 1px rgba(255,255,255,0.13); }
 .hud-round { border-color: rgba(243, 178, 88, 0.82); }
-.hud-score { border-color: rgba(247, 145, 180, 0.85); }
+.hud-score { position: relative; border-color: rgba(247, 145, 180, 0.85); }
 .hud-time { border-color: rgba(105, 194, 229, 0.85); }
 .hud-time.is-warning { animation: pulse-warning 0.85s ease-in-out infinite alternate; border-color: #ffd27b; }
 .hud-label { display: block; margin-bottom: 2px; color: #f7dcca; font-size: clamp(0.58rem, 1.7vw, 0.76rem); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
@@ -95,7 +95,7 @@ button { font: inherit; }
 .countdown-number { color: #ffe29b; font-size: clamp(6rem, 35vw, 12rem); font-weight: 900; line-height: 0.8; text-shadow: 0 9px 0 rgba(124, 59, 58, 0.62); animation: countdown-pop 0.9s ease both; }
 .overlay-countdown p { margin: 26px 0 0; color: #fff2df; font-size: 0.86rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
 .round-banner { position: absolute; top: 43%; left: 50%; z-index: 3; padding: 11px 20px; color: #fff2df; border: 1px solid rgba(255, 224, 154, 0.68); border-radius: 999px; background: rgba(88, 42, 51, 0.92); box-shadow: 0 10px 32px rgba(0,0,0,0.3); transform: translate(-50%, -50%); animation: banner-in 0.8s ease both; font-size: clamp(1.05rem, 5vw, 1.55rem); font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
-.feedback-toast { position: absolute; top: 14%; left: 50%; z-index: 5; display: flex; align-items: baseline; gap: 8px; color: #fff; transform: translateX(-50%); animation: feedback-pop 0.85s ease both; pointer-events: none; text-shadow: 0 3px 0 rgba(88, 35, 38, 0.65); white-space: nowrap; }
+.feedback-toast { position: absolute; top: calc(100% + 2px); left: 50%; z-index: 5; display: flex; align-items: baseline; gap: 8px; color: #fff; transform: translateX(-50%); animation: feedback-pop 0.85s ease both; pointer-events: none; text-shadow: 0 3px 0 rgba(88, 35, 38, 0.65); white-space: nowrap; }
 .feedback-toast strong { font-size: clamp(1.25rem, 6vw, 2rem); letter-spacing: 0.05em; }
 .feedback-toast span { font-size: clamp(1.05rem, 5vw, 1.65rem); font-weight: 900; }
 .feedback-match strong, .feedback-match span { color: #ffe296; }

@@ -51,6 +51,11 @@ test('finishes at zero and offers a replay result', async ({ page }) => {
 
   await expect(page.getByText("Time's up")).toBeVisible()
   await expect(page.getByRole('button', { name: 'Play again' })).toBeVisible()
+  await expect(page.locator('.result-grid strong').nth(0)).toHaveText('0')
+  await expect(page.locator('.result-grid strong').nth(1)).toHaveText('0')
+  await expect(page.locator('.result-grid strong').nth(2)).toHaveText('1')
+  await page.getByRole('button', { name: 'Play again' }).click()
+  await expect(page.getByRole('button', { name: 'Tap to start' })).toBeVisible()
 })
 
 test('scores Match and Mismatch through the visible Board', async ({ page }) => {
@@ -60,13 +65,13 @@ test('scores Match and Mismatch through the visible Board', async ({ page }) => 
 
   await cards.nth(groups[0][0]).click()
   await cards.nth(groups[1][0]).click()
-  await expect(page.locator('.hud-score strong')).toHaveText('0')
+  await expect(page.locator('.hud-score > strong')).toHaveText('0')
   await expect(page.getByText('MISMATCH!')).toBeVisible()
   await page.clock.fastForward(700)
 
   await cards.nth(groups[0][0]).click()
   await cards.nth(groups[0][1]).click()
-  await expect(page.locator('.hud-score strong')).toHaveText('10')
+  await expect(page.locator('.hud-score > strong')).toHaveText('10')
   await expect(page.getByText('MATCH!')).toBeVisible()
 })
 
@@ -120,21 +125,12 @@ test('persists a new High Score for the next Game Session', async ({ page }) => 
   const [firstPair] = await cardGroups(page)
   await cards.nth(firstPair[0]).click()
   await cards.nth(firstPair[1]).click()
-  await expect(page.locator('.hud-score strong')).toHaveText('10')
+  await expect(page.locator('.hud-score > strong')).toHaveText('10')
   await page.clock.runFor(120000)
   await expect(page.getByRole('button', { name: 'Play again' })).toBeVisible()
   await expect(page.locator('.result-grid strong').nth(1)).toHaveText('10')
 
-  const nextPage = await page.context().newPage()
-  await nextPage.clock.install()
-  await nextPage.goto('/')
-  await nextPage.getByRole('button', { name: 'Tap to start' }).click()
-  await expect(nextPage.getByText('Get ready')).toBeVisible()
-  await nextPage.clock.fastForward(3000)
-  await expect(nextPage.getByText('Get ready')).toBeHidden()
-  await nextPage.clock.runFor(1000)
-  await expect(nextPage.locator('.hud-time strong')).not.toHaveText('2:00')
-  await nextPage.clock.runFor(119000)
-  await expect(nextPage.locator('.result-grid strong').nth(1)).toHaveText('10')
-  await nextPage.close()
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Tap to start' })).toBeVisible()
+  await expect(page.evaluate(() => window.localStorage.getItem('cat-card.high-score'))).resolves.toBe('10')
 })

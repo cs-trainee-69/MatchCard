@@ -155,6 +155,23 @@ describe('Game Session start', () => {
     expect(session.getState().highScore).toBe(7)
   })
 
+  it('resolves a second-card Mismatch accepted before zero before finishing', () => {
+    const session = createGameSession({ durationMs: 1, random: () => 0 })
+    session.dispatch({ type: 'begin' })
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    const [firstCard, secondCard] = session.getState().board
+
+    session.dispatch({ type: 'select-card', cardId: firstCard.id })
+    session.dispatch({ type: 'select-card', cardId: secondCard.id })
+    expect(session.getState().phase).toBe('resolving-mismatch')
+    expect(session.getState().remainingMs).toBe(1)
+
+    session.dispatch({ type: 'tick', deltaMs: 700 })
+    expect(session.getState().phase).toBe('finished')
+    expect(session.getState().remainingMs).toBe(0)
+    expect(session.getState().selectedCardIds).toEqual([])
+  })
+
   it('updates High Score when the finished Score beats the saved value', () => {
     const session = createGameSession({ durationMs: 1000, highScore: 7, random: () => 0 })
     session.dispatch({ type: 'begin' })

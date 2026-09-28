@@ -100,7 +100,7 @@ function CardButton({
   )
 }
 
-function Hud({ state }: { state: GameState }) {
+function Hud({ state, feedback }: { state: GameState; feedback: Feedback }) {
   const isWarning = state.remainingMs <= 10_000 && state.remainingMs > 0 && state.phase !== 'ready'
 
   return (
@@ -112,6 +112,7 @@ function Hud({ state }: { state: GameState }) {
       <div className="hud-stat hud-score">
         <span className="hud-label">Score</span>
         <strong>{state.score}</strong>
+        <FeedbackToast feedback={feedback} />
       </div>
       <div className={`hud-stat hud-time ${isWarning ? 'is-warning' : ''}`}>
         <span className="hud-label">Time</span>
@@ -305,7 +306,7 @@ export default function App() {
       <section className="game-frame" aria-label="Cat Card matching game">
         <div className="game-backdrop" />
         <div className="game-content">
-          <Hud state={state} />
+          <Hud state={state} feedback={feedback} />
           <div className="board-wrap">
             {state.board.length > 0 && (
               <div className="board-layout" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
@@ -328,7 +329,6 @@ export default function App() {
             </button>
             <span className="footer-hint">Match the curious cats</span>
           </div>
-          <FeedbackToast feedback={feedback} />
           {state.phase === 'ready' && <StartOverlay onStart={handleStart} />}
           {state.phase === 'countdown' && <CountdownOverlay countdownMs={state.countdownMs} />}
           {state.phase === 'paused' && <PauseOverlay onResume={() => dispatch({ type: 'resume' })} />}
