@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import {
   type Card,
   createGameSession,
@@ -12,30 +12,69 @@ import { playSound } from './audio'
 import { loadHighScore, loadSoundEnabled, saveHighScore, saveSoundEnabled } from './storage'
 
 const CHARACTER_LABELS: Record<Card['character'], string> = {
-  alien: 'Alien',
-  cowboy: 'Cowboy',
-  doctor: 'Doctor',
-  fish: 'Fish',
-  griffin: 'Griffin',
-  octopus: 'Octopus',
-  police: 'Police',
-  space: 'Space',
-  witch: 'Witch',
+  'cat-1': 'Cat 1',
+  'cat-2': 'Cat 2',
+  'cat-3': 'Cat 3',
+  'cat-4': 'Cat 4',
+  'cat-5': 'Cat 5',
+  'cat-6': 'Cat 6',
+  'cat-7': 'Cat 7',
+  'cat-8': 'Cat 8',
+  'cat-9': 'Cat 9',
+  'cat-10': 'Cat 10',
 }
 
 const CHARACTER_IMAGES: Record<Card['character'], string> = {
-  alien: '/card/cat/alien-cat.png',
-  cowboy: '/card/cat/cowboy-cat.png',
-  doctor: '/card/cat/doctor-cat.png',
-  fish: '/card/cat/fish-cat.png',
-  griffin: '/card/cat/griffin-cat.png',
-  octopus: '/card/cat/octopus-cat.png',
-  police: '/card/cat/police-cat.png',
-  space: '/card/cat/space-cat.png',
-  witch: '/card/cat/witch-cat.png',
+  'cat-1': '/card/cat/cat-1.png',
+  'cat-2': '/card/cat/cat-2.png',
+  'cat-3': '/card/cat/cat-3.png',
+  'cat-4': '/card/cat/cat-4.png',
+  'cat-5': '/card/cat/cat-5.png',
+  'cat-6': '/card/cat/cat-6.png',
+  'cat-7': '/card/cat/cat-7.png',
+  'cat-8': '/card/cat/cat-8.png',
+  'cat-9': '/card/cat/cat-9.png',
+  'cat-10': '/card/cat/cat-10.png',
 }
 
+const CELEBRATION_IMAGE = '/card/cat/cat-celebration.png'
+
 type Feedback = { kind: 'match' | 'mismatch'; scoreDeltaLabel: string; id: number } | null
+
+type MatchEffect = {
+  id: number
+  sourceX: number
+  sourceY: number
+  targetX: number
+  targetY: number
+}
+
+function PawIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+      <ellipse cx="20" cy="27" rx="9" ry="8" />
+      <circle cx="8.5" cy="16" r="4.5" />
+      <circle cx="16" cy="10" r="4.5" />
+      <circle cx="24" cy="10" r="4.5" />
+      <circle cx="31.5" cy="16" r="4.5" />
+    </svg>
+  )
+}
+
+function useReducedMotion(): boolean {
+  const [reducedMotion, setReducedMotion] = useState(false)
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = () => setReducedMotion(mediaQuery.matches)
+    updatePreference()
+    mediaQuery.addEventListener?.('change', updatePreference)
+
+    return () => mediaQuery.removeEventListener?.('change', updatePreference)
+  }, [])
+
+  return reducedMotion
+}
 
 function formatTime(remainingMs: number): string {
   const totalSeconds = Math.ceil(remainingMs / 1000)
@@ -62,11 +101,15 @@ function CardButton({
   card,
   index,
   disabled,
+  isMismatch,
+  cardRef,
   onSelect,
 }: {
   card: Card
   index: number
   disabled: boolean
+  isMismatch: boolean
+  cardRef: (element: HTMLButtonElement | null) => void
   onSelect: (cardId: string) => void
 }) {
   const isHidden = card.status === 'hidden'
@@ -75,7 +118,8 @@ function CardButton({
 
   return (
     <button
-      className={`card-button ${isHidden ? '' : 'is-revealed'} ${isMatched ? 'is-matched' : ''}`}
+      ref={cardRef}
+      className={`card-button ${isHidden ? '' : 'is-revealed'} ${isMatched ? 'is-matched' : ''} ${isMismatch ? 'is-mismatch' : ''}`}
       type="button"
       aria-label={label}
       aria-pressed={!isHidden}
@@ -88,12 +132,22 @@ function CardButton({
       <span className="card-face card-front" aria-hidden="true">
         <img src={CHARACTER_IMAGES[card.character]} alt="" />
       </span>
+      {isMismatch && <span className="mismatch-mark" aria-hidden="true">!?</span>}
     </button>
   )
 }
 
-function Hud({ state, feedback }: { state: GameState; feedback: Feedback }) {
+function Hud({
+  state,
+  feedback,
+  scoreRef,
+}: {
+  state: GameState
+  feedback: Feedback
+  scoreRef: (element: HTMLDivElement | null) => void
+}) {
   const isWarning = state.remainingMs <= 10_000 && state.remainingMs > 0 && state.phase !== 'ready'
+  const warningLevel = !isWarning ? 'none' : Math.ceil(state.remainingMs / 1000) <= 3 ? 'critical' : 'warning'
 
   return (
     <header className="hud">
@@ -101,14 +155,14 @@ function Hud({ state, feedback }: { state: GameState; feedback: Feedback }) {
         <span className="hud-label">Round</span>
         <strong className="hud-value">{state.round}</strong>
       </div>
-      <div className="hud-stat hud-score">
+      <div ref={scoreRef} className="hud-stat hud-score">
         <span className="hud-label">Score</span>
         <strong key={feedback?.id ?? 'score'} className="hud-value score-value">
           {state.score}
         </strong>
         <FeedbackToast feedback={feedback} />
       </div>
-      <div className={`hud-stat hud-time ${isWarning ? 'is-warning' : ''}`}>
+      <div className={`hud-stat hud-time ${isWarning ? 'is-warning' : ''} ${warningLevel === 'critical' ? 'is-critical' : ''}`} data-warning-level={warningLevel}>
         <span className="hud-label">Time</span>
         <strong className="hud-value">{formatTime(state.remainingMs)}</strong>
       </div>
@@ -123,6 +177,63 @@ function FeedbackToast({ feedback }: { feedback: Feedback }) {
     <div key={feedback.id} className={`feedback-toast feedback-${feedback.kind}`} role="status" aria-live="polite">
       <strong>{feedback.kind === 'match' ? 'MATCH!' : 'MISMATCH!'}</strong>
       <span>{feedback.scoreDeltaLabel}</span>
+    </div>
+  )
+}
+
+function MatchEffectLayer({ effect, reducedMotion }: { effect: MatchEffect; reducedMotion: boolean }) {
+  const style = {
+    '--match-x': `${effect.sourceX}px`,
+    '--match-y': `${effect.sourceY}px`,
+    '--target-x': `${effect.targetX}px`,
+    '--target-y': `${effect.targetY}px`,
+    '--travel-x': `${effect.targetX - effect.sourceX}px`,
+    '--travel-y': `${effect.targetY - effect.sourceY}px`,
+  } as CSSProperties
+
+  return (
+    <div
+      className={`match-effect-layer ${reducedMotion ? 'is-reduced-motion' : ''}`}
+      data-testid="match-effect-layer"
+      data-motion={reducedMotion ? 'reduced' : 'full'}
+      style={style}
+      aria-hidden="true"
+    >
+      <span className="match-effect-burst">
+        <span className="match-spark match-spark-one">✦</span>
+        <span className="match-spark match-spark-two">✧</span>
+        <span className="match-spark match-spark-three">✦</span>
+        <span className="match-spark match-spark-four">•</span>
+      </span>
+      <span className="match-effect-paw">
+        <PawIcon className="paw-icon" />
+      </span>
+      <span className="match-effect-impact" />
+    </div>
+  )
+}
+
+function UrgencyVignette({ level }: { level: 'warning' | 'critical' }) {
+  return <div className={`urgency-vignette urgency-${level}`} data-testid="urgency-vignette" data-urgency={level} aria-hidden="true" />
+}
+
+function RoundCelebration({ state }: { state: GameState }) {
+  return (
+    <div className="round-celebration" role="status" aria-live="polite">
+      <div className="round-confetti" aria-hidden="true">
+        {Array.from({ length: 10 }, (_, index) => (
+          <span key={index} className={`round-confetti-piece round-confetti-piece-${index + 1}`}>
+            <PawIcon className="paw-icon" />
+          </span>
+        ))}
+      </div>
+      <div className="round-celebration-card">
+        <img className="round-celebration-cat" src={CELEBRATION_IMAGE} alt="" aria-hidden="true" />
+        <div className="round-celebration-copy">
+          <p className="eyebrow">Round complete</p>
+          <strong>Round {state.round + 1}</strong>
+        </div>
+      </div>
     </div>
   )
 }
@@ -178,30 +289,38 @@ function PauseOverlay({ onResume }: { onResume: () => void }) {
 }
 
 function ResultOverlay({ state, isNewHighScore, onReplay }: { state: GameState; isNewHighScore: boolean; onReplay: () => void }) {
-
   return (
-    <div className="overlay overlay-result">
+    <div className="overlay overlay-result" data-testid="result-overlay">
       <div className="overlay-card result-card">
-        <p className="eyebrow">Time's up</p>
-        <h2>Nice work!</h2>
-        {isNewHighScore && <p className="new-high-score">New High Score</p>}
-        <div className="result-grid">
-          <div>
-            <span className="hud-label">Score</span>
-            <strong>{state.score}</strong>
-          </div>
-          <div>
-            <span className="hud-label">High Score</span>
-            <strong>{state.highScore}</strong>
-          </div>
-          <div>
-            <span className="hud-label">Round</span>
-            <strong>{state.round}</strong>
-          </div>
+        <div className="result-sparkles" aria-hidden="true">
+          <span>✦</span>
+          <span>✧</span>
+          <span>✦</span>
         </div>
-        <button className="primary-button" type="button" onClick={onReplay}>
-          Play again
-        </button>
+        <img className="result-cat-card" src={CELEBRATION_IMAGE} alt="" aria-hidden="true" />
+        <div className="result-card-content">
+          <p className="eyebrow">Time's up</p>
+          <h2>Nice work!</h2>
+          {isNewHighScore && <p className="new-high-score"><span aria-hidden="true">✦</span> New High Score <span aria-hidden="true">✦</span></p>}
+          <div className="result-grid">
+            <div className="result-stat" data-stat="score">
+              <span className="result-label">Score</span>
+              <strong>{state.score}</strong>
+            </div>
+            <div className="result-stat" data-stat="high-score">
+              <span className="result-label">High Score</span>
+              <strong>{state.highScore}</strong>
+            </div>
+            <div className="result-stat" data-stat="round">
+              <span className="result-label">Round</span>
+              <strong>{state.round}</strong>
+            </div>
+          </div>
+          <button className="primary-button result-replay-button" type="button" onClick={onReplay}>
+            <span className="result-button-paw" aria-hidden="true"><PawIcon className="paw-icon" /></span>
+            <span>Play again</span>
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -213,9 +332,17 @@ export default function App() {
   const [state, setState] = useState<GameState>(() => session.getState())
   const [soundEnabled, setSoundEnabled] = useState(loadSoundEnabled)
   const [feedback, setFeedback] = useState<Feedback>(null)
+  const [matchEffect, setMatchEffect] = useState<MatchEffect | null>(null)
+  const prefersReducedMotion = useReducedMotion()
   const previousState = useRef(state)
+  const soundEnabledRef = useRef(soundEnabled)
   const feedbackId = useRef(0)
-  const warningPlayed = useRef(false)
+  const warningSecondPlayed = useRef<number | null>(null)
+  const frameRef = useRef<HTMLElement | null>(null)
+  const scoreRef = useRef<HTMLDivElement | null>(null)
+  const cardRefs = useRef(new Map<string, HTMLButtonElement>())
+  const matchEffectTimeout = useRef<number | null>(null)
+  const impactSoundTimeout = useRef<number | null>(null)
 
   const dispatch = useCallback(
     (action: GameAction) => {
@@ -247,7 +374,44 @@ export default function App() {
   }, [state.highScore])
 
   useEffect(() => {
+    soundEnabledRef.current = soundEnabled
+  }, [soundEnabled])
+
+  useEffect(() => {
     const previous = previousState.current
+
+    const newlyMatchedCards = state.board.filter((card) => {
+      if (card.status !== 'matched') return false
+      const previousCard = previous.board.find((previousBoardCard) => previousBoardCard.id === card.id)
+      return previousCard?.status !== 'matched'
+    })
+
+    if (newlyMatchedCards.length >= 2) {
+      const frame = frameRef.current
+      const score = scoreRef.current
+      const sourceRects = newlyMatchedCards
+        .slice(0, 2)
+        .map((card) => cardRefs.current.get(card.id)?.getBoundingClientRect())
+        .filter((rect): rect is DOMRect => Boolean(rect))
+
+      if (frame && score && sourceRects.length === 2) {
+        const frameRect = frame.getBoundingClientRect()
+        const scoreRect = score.getBoundingClientRect()
+        const sourceX = sourceRects.reduce((total, rect) => total + rect.left + rect.width / 2, 0) / sourceRects.length - frameRect.left
+        const sourceY = sourceRects.reduce((total, rect) => total + rect.top + rect.height / 2, 0) / sourceRects.length - frameRect.top
+        const targetX = scoreRect.left + scoreRect.width / 2 - frameRect.left
+        const targetY = scoreRect.top + scoreRect.height / 2 - frameRect.top
+        const nextMatchEffect = { id: feedbackId.current + 1, sourceX, sourceY, targetX, targetY }
+
+        if (matchEffectTimeout.current !== null) window.clearTimeout(matchEffectTimeout.current)
+        setMatchEffect(nextMatchEffect)
+        matchEffectTimeout.current = window.setTimeout(() => setMatchEffect(null), 760)
+
+        if (impactSoundTimeout.current !== null) window.clearTimeout(impactSoundTimeout.current)
+        impactSoundTimeout.current = window.setTimeout(() => playSound('match-impact', soundEnabledRef.current), 260)
+      }
+    }
+
     if (state.score > previous.score) {
       feedbackId.current += 1
       setFeedback({ kind: 'match', scoreDeltaLabel: '+10', id: feedbackId.current })
@@ -258,16 +422,32 @@ export default function App() {
       playSound('mismatch', soundEnabled)
     }
 
+    if (state.phase === 'transitioning-round' && previous.phase !== 'transitioning-round') {
+      playSound('round-complete', soundEnabled)
+    }
+
     if (state.phase === 'finished' && previous.phase !== 'finished') playSound('finish', soundEnabled)
     previousState.current = state
   }, [state, soundEnabled])
 
   useEffect(() => {
-    if (state.remainingMs <= 10_000 && state.remainingMs > 0 && !warningPlayed.current) {
-      warningPlayed.current = true
-      playSound('warning', soundEnabled)
+    if (state.phase !== 'paused' && state.phase !== 'finished') return
+
+    if (matchEffectTimeout.current !== null) window.clearTimeout(matchEffectTimeout.current)
+    if (impactSoundTimeout.current !== null) window.clearTimeout(impactSoundTimeout.current)
+    setMatchEffect(null)
+  }, [state.phase])
+
+  useEffect(() => {
+    const warningSecond = Math.ceil(state.remainingMs / 1000)
+    const isWarning = state.remainingMs <= 10_000 && state.remainingMs > 0 && state.phase !== 'ready'
+
+    if (isWarning && warningSecond !== warningSecondPlayed.current) {
+      warningSecondPlayed.current = warningSecond
+      playSound('warning', soundEnabled, { urgent: warningSecond <= 3 })
     }
-    if (state.phase === 'ready') warningPlayed.current = false
+
+    if (!isWarning) warningSecondPlayed.current = null
   }, [state.phase, state.remainingMs, soundEnabled])
 
   useEffect(() => {
@@ -300,6 +480,7 @@ export default function App() {
     setSession(nextSession)
     setState(nextSession.getState())
     setFeedback(null)
+    setMatchEffect(null)
   }
 
   const boardLayout = getBoardLayout(state.round)
@@ -307,10 +488,10 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <section className="game-frame" aria-label="Cat Card matching game">
+      <section ref={frameRef} className={`game-frame ${prefersReducedMotion ? 'prefers-reduced-motion' : ''}`} data-motion={prefersReducedMotion ? 'reduced' : 'full'} aria-label="Cat Card matching game">
         <div className="game-backdrop" />
         <div className="game-content">
-          <Hud state={state} feedback={feedback} />
+          <Hud state={state} feedback={feedback} scoreRef={(element) => { scoreRef.current = element }} />
           <div className="board-wrap">
             {state.board.length > 0 && (
               <div
@@ -324,6 +505,11 @@ export default function App() {
                     card={card}
                     index={index}
                     disabled={cardsDisabled}
+                    isMismatch={state.phase === 'resolving-mismatch' && state.selectedCardIds.includes(card.id)}
+                    cardRef={(element) => {
+                      if (element) cardRefs.current.set(card.id, element)
+                      else cardRefs.current.delete(card.id)
+                    }}
                     onSelect={handleSelect}
                   />
                 ))}
@@ -340,8 +526,12 @@ export default function App() {
           {state.phase === 'countdown' && <CountdownOverlay countdownMs={state.countdownMs} />}
           {state.phase === 'first-turn-hint' && <FirstTurnHintOverlay />}
           {state.phase === 'paused' && <PauseOverlay onResume={() => dispatch({ type: 'resume' })} />}
+          {matchEffect && <MatchEffectLayer effect={matchEffect} reducedMotion={prefersReducedMotion} />}
+          {state.remainingMs <= 10_000 && state.remainingMs > 0 && state.phase !== 'ready' && (
+            <UrgencyVignette level={Math.ceil(state.remainingMs / 1000) <= 3 ? 'critical' : 'warning'} />
+          )}
           {state.phase === 'transitioning-round' && (
-            <div className="round-banner" role="status">Round {state.round + 1}</div>
+            <RoundCelebration state={state} />
           )}
           {state.phase === 'finished' && (
             <ResultOverlay state={state} isNewHighScore={state.score > startingHighScore} onReplay={handleReplay} />

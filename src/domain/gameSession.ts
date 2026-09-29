@@ -2,26 +2,28 @@ export const GAME_DURATION_MS = 120_000
 export const FIRST_TURN_HINT_MS = 1_200
 export const ROUND_LAYOUTS = [
   { rows: 2, columns: 2, cardCount: 4 },
-  { rows: 2, columns: 3, cardCount: 6 },
-  { rows: 2, columns: 4, cardCount: 8 },
-  { rows: 3, columns: 4, cardCount: 12 },
+  { rows: 3, columns: 2, cardCount: 6 },
+  { rows: 4, columns: 2, cardCount: 8 },
+  { rows: 4, columns: 3, cardCount: 12 },
   { rows: 4, columns: 4, cardCount: 16 },
+  { rows: 5, columns: 4, cardCount: 20 },
 ] as const
 
-export const ROUND_CARD_COUNTS = [4, 6, 8, 12, 16] as const
+export const ROUND_CARD_COUNTS = [4, 6, 8, 12, 16, 20] as const
 
 export type BoardSize = (typeof ROUND_LAYOUTS)[number]['cardCount']
 export type BoardLayout = (typeof ROUND_LAYOUTS)[number]
 export type CatCharacterId =
-  | 'alien'
-  | 'cowboy'
-  | 'doctor'
-  | 'fish'
-  | 'griffin'
-  | 'octopus'
-  | 'police'
-  | 'space'
-  | 'witch'
+  | 'cat-1'
+  | 'cat-2'
+  | 'cat-3'
+  | 'cat-4'
+  | 'cat-5'
+  | 'cat-6'
+  | 'cat-7'
+  | 'cat-8'
+  | 'cat-9'
+  | 'cat-10'
 
 export type GamePhase =
   | 'ready'
@@ -89,15 +91,16 @@ export type GameSession = {
 }
 
 const CAT_CHARACTERS: CatCharacterId[] = [
-  'alien',
-  'cowboy',
-  'doctor',
-  'fish',
-  'griffin',
-  'octopus',
-  'police',
-  'space',
-  'witch',
+  'cat-1',
+  'cat-2',
+  'cat-3',
+  'cat-4',
+  'cat-5',
+  'cat-6',
+  'cat-7',
+  'cat-8',
+  'cat-9',
+  'cat-10',
 ]
 
 function shuffle<T>(items: T[], random: () => number): T[] {

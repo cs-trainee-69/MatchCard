@@ -9,12 +9,12 @@ function startPlaying(session: GameSession) {
 
 describe('Board layout', () => {
   it('uses the requested rows by columns layout for each round', () => {
-    const layouts = [1, 2, 3, 4, 5, 6].map((round) => {
+    const layouts = [1, 2, 3, 4, 5, 6, 7].map((round) => {
       const { rows, columns } = getBoardLayout(round)
       return `${rows}x${columns}`
     })
 
-    expect(layouts).toEqual(['2x2', '2x3', '2x4', '3x4', '4x4', '4x4'])
+    expect(layouts).toEqual(['2x2', '3x2', '4x2', '4x3', '4x4', '5x4', '5x4'])
   })
 })
 
@@ -221,10 +221,10 @@ describe('Game Session start', () => {
     expect(session.getState().highScore).toBe(10)
   })
 
-  it('caps Board size at sixteen cards while continuing to increase the Round number', () => {
+  it('caps Board size at twenty cards while continuing to increase the Round number', () => {
     const session = createGameSession({ random: () => 0 })
     startPlaying(session)
-    const expectedSizes = [4, 6, 8, 12, 16]
+    const expectedSizes = [4, 6, 8, 12, 16, 20]
 
     for (const expectedSize of expectedSizes) {
       expect(session.getState().board).toHaveLength(expectedSize)
@@ -240,8 +240,8 @@ describe('Game Session start', () => {
       session.dispatch({ type: 'tick', deltaMs: 800 })
     }
 
-    expect(session.getState().round).toBe(6)
-    expect(session.getState().board).toHaveLength(16)
+    expect(session.getState().round).toBe(7)
+    expect(session.getState().board).toHaveLength(20)
     expect(session.getState().board.every((card) => card.status === 'hidden')).toBe(true)
   })
 
