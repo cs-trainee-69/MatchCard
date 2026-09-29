@@ -277,6 +277,9 @@ test('keeps every planned Board layout usable through Round 6', async ({ page })
     { count: 20, layout: '5x4' },
   ]
 
+  let fourByTwoCardWidth: number | null = null
+  let fourByTwoCardHeight: number | null = null
+
   for (const [index, expected] of expectedBoards.entries()) {
     const cards = page.locator('button.card-button')
     await expect(cards).toHaveCount(expected.count)
@@ -288,6 +291,17 @@ test('keeps every planned Board layout usable through Round 6', async ({ page })
     expect(lastCardBox).not.toBeNull()
     expect(lastCardBox!.x + lastCardBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width + 1)
     expect(lastCardBox!.y + lastCardBox!.height).toBeLessThanOrEqual(frameBox!.y + frameBox!.height + 1)
+
+    if (expected.layout === '4x2') {
+      fourByTwoCardWidth = lastCardBox!.width
+      fourByTwoCardHeight = lastCardBox!.height
+    }
+    if (expected.layout === '4x3') {
+      expect(fourByTwoCardWidth).not.toBeNull()
+      expect(fourByTwoCardHeight).not.toBeNull()
+      expect(lastCardBox!.width).toBeLessThan(fourByTwoCardWidth!)
+      expect(lastCardBox!.height).toBeLessThan(fourByTwoCardHeight!)
+    }
 
     if (index === expectedBoards.length - 1) break
 

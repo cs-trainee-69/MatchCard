@@ -241,9 +241,17 @@ function RoundCelebration({ state }: { state: GameState }) {
 function StartOverlay({ onStart }: { onStart: () => void }) {
   return (
     <div className="overlay overlay-start">
-      <button className="start-prompt" type="button" lang="th" onClick={onStart}>
-        แตะเพื่อเริ่ม
-      </button>
+      <div className="start-intro">
+        <img className="start-cat" src={CELEBRATION_IMAGE} alt="" aria-hidden="true" />
+        <div className="start-intro-copy">
+          <p className="eyebrow">Cat Card</p>
+          <p className="start-subtitle" lang="th">จับคู่แมวให้ครบก่อนเวลาหมด</p>
+          <button className="start-prompt" type="button" lang="th" onClick={onStart}>
+            <span className="start-button-paw" aria-hidden="true"><PawIcon className="paw-icon" /></span>
+            <span>แตะเพื่อเริ่ม</span>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -517,7 +525,10 @@ export default function App() {
             )}
           </div>
           <div className="game-footer">
-            <span className="footer-hint">Match the curious cats</span>
+            <span className="footer-hint">
+              <PawIcon className="paw-icon" />
+              <span>Match the curious cats</span>
+            </span>
             <button className="sound-button" type="button" onClick={handleToggleSound} aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}>
               <SoundIcon enabled={soundEnabled} />
             </button>
