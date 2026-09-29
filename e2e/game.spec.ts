@@ -67,6 +67,7 @@ async function startGoldenPlaying(page: Page) {
   expect(alertBox!.x + alertBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width)
   expect(alertBox!.y).toBeGreaterThanOrEqual(frameBox!.y)
   expect(alertBox!.y + alertBox!.height).toBeLessThanOrEqual(frameBox!.y + frameBox!.height)
+  expect(Math.abs(alertBox!.width / alertBox!.height - 1)).toBeLessThan(0.03)
   await page.clock.fastForward(2500)
   await expect(page.locator('[data-testid="golden-timer"]')).toBeVisible()
 }
@@ -176,6 +177,9 @@ test('finishes at zero and offers a replay result', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Play again' })).toBeVisible()
   await expect(page.locator('[data-testid="result-overlay"]')).toBeVisible()
   await expect(page.locator('.result-card')).toHaveCSS('background-image', /result-panel/)
+  const resultBox = await page.locator('.result-card').boundingBox()
+  expect(resultBox).not.toBeNull()
+  expect(Math.abs(resultBox!.width / resultBox!.height - 1)).toBeLessThan(0.03)
   await expect(page.locator('.result-cat-card')).toBeVisible()
   await expect(page.locator('.result-cat-card')).toHaveAttribute('src', '/card/cat/cat-celebration.png')
   await expect(page.locator('.result-stat')).toHaveCount(3)
