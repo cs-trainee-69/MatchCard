@@ -371,8 +371,8 @@ function ResultOverlay({ state, isNewHighScore, onReplay }: { state: GameState; 
         </div>
         <img className="result-cat-card" src={CELEBRATION_IMAGE} alt="" aria-hidden="true" />
         <div className="result-card-content">
-          <p className="eyebrow">Time's up</p>
-          <h2>Nice work!</h2>
+          <p className="eyebrow">Game Result</p>
+          <h2>Time's up</h2>
           {isNewHighScore && <p className="new-high-score"><span aria-hidden="true">✦</span> New High Score <span aria-hidden="true">✦</span></p>}
           <div className="result-grid">
             <div className="result-stat" data-stat="score">

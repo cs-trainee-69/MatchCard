@@ -140,11 +140,11 @@ button { font: inherit; }
 .overlay-first-turn-hint { background: rgba(19, 8, 16, 0.3); }
 .first-turn-hint { margin: 0; color: #fff3d4; font-size: clamp(2rem, 11vw, 4.4rem); font-weight: 700; letter-spacing: 0.08em; text-shadow: 0 5px 0 rgba(102, 49, 57, 0.7), 0 12px 25px rgba(0,0,0,0.3); animation: hint-pop 1.2s ease both; }
 .overlay-golden-alert { background: rgba(17, 24, 32, 0.68); }
-.golden-alert-card { position: relative; width: min(100%, 330px); min-height: 0; aspect-ratio: 1 / 1; overflow: visible; padding: 43px 29px 35px; border: 0; border-radius: 34px; background: url('/ui/golden-alert-panel.png') center / 100% 100% no-repeat; box-shadow: 0 20px 50px rgba(0,0,0,0.34), 0 0 32px rgba(255, 190, 65, 0.28); }
+.golden-alert-card { position: relative; width: min(100%, 330px); min-height: 0; aspect-ratio: 1 / 1; overflow: hidden; padding: 30px 29px 30px; border: 0; border-radius: 34px; background: url('/ui/golden-alert-panel.png') center / 100% 100% no-repeat; box-shadow: 0 20px 50px rgba(0,0,0,0.34), 0 0 32px rgba(255, 190, 65, 0.28); }
 .golden-alert-card .eyebrow { color: #b45f2a; text-shadow: 0 1px rgba(255,255,255,0.8); }
-.golden-alert-card h2 { color: #5b4058; text-shadow: 0 2px rgba(255,255,255,0.86); }
-.golden-alert-instruction { margin: 14px auto 0; max-width: 22ch; color: #704348; font-size: clamp(0.88rem, 3.8vw, 1.05rem); font-weight: 700; line-height: 1.55; text-shadow: 0 1px rgba(255,255,255,0.58); }
-.golden-alert-cat { position: absolute; top: -76px; right: -22px; width: 118px; filter: drop-shadow(0 8px 7px rgba(34, 10, 20, 0.36)); transform: rotate(8deg); animation: golden-alert-cat-in 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.12) both; }
+.golden-alert-card h2 { margin: 0; color: #5b4058; font-size: clamp(1.45rem, 7vw, 2.1rem); text-shadow: 0 2px rgba(255,255,255,0.86); }
+.golden-alert-instruction { margin: 10px auto 0; max-width: 21ch; color: #704348; font-size: clamp(0.82rem, 3.4vw, 0.98rem); font-weight: 700; line-height: 1.4; text-shadow: 0 1px rgba(255,255,255,0.58); }
+.golden-alert-cat { position: relative; top: auto; right: auto; display: block; width: clamp(64px, 20vw, 80px); margin: 0 auto 2px; filter: drop-shadow(0 5px 5px rgba(34, 10, 20, 0.28)); transform: rotate(4deg); animation: golden-alert-cat-in 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.12) both; }
 .golden-timer { width: min(100%, 340px); margin: -7px auto 0; padding: 5px 11px 7px; color: #fff4cf; border: 1px solid rgba(255, 214, 112, 0.7); border-radius: 999px; background: rgba(91, 49, 38, 0.86); box-shadow: 0 5px 13px rgba(45, 14, 18, 0.2), inset 0 1px rgba(255, 255, 255, 0.15); }
 .golden-timer-heading { display: flex; align-items: center; gap: 6px; font-size: clamp(0.58rem, 1.8vw, 0.72rem); font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
 .golden-timer-heading strong { margin-left: auto; color: #ffe28a; font-size: clamp(0.82rem, 2.8vw, 1rem); letter-spacing: 0.03em; }
@@ -211,7 +211,7 @@ button { font: inherit; }
 .result-card::after { right: 19px; bottom: 23px; color: rgba(246, 169, 157, 0.7); font-size: 1.3rem; transform: rotate(14deg); }
 .result-card-content { position: relative; z-index: 1; }
 .result-card .eyebrow { margin-bottom: 8px; color: #ad5a53; text-shadow: 0 1px rgba(255,255,255,0.78); }
-.result-card h2 { color: #5b4058; text-shadow: 0 2px rgba(255,255,255,0.86); }
+.result-card h2 { color: #5b4058; font-size: clamp(1.55rem, 7vw, 2.15rem); text-shadow: 0 2px rgba(255,255,255,0.86); }
 .result-sparkles { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .result-sparkles span { position: absolute; color: #ffe39f; text-shadow: 0 2px 8px rgba(255, 176, 90, 0.5); animation: result-sparkle 1.4s ease-in-out infinite alternate; }
 .result-sparkles span:nth-child(1) { top: 68px; left: 30px; font-size: 0.9rem; }
