@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import {
   type Card,
   createGameSession,
+  GOLDEN_TIMER_MS,
   getBoardLayout,
   isClockRunningPhase,
   type GameAction,
@@ -39,7 +40,7 @@ const CHARACTER_IMAGES: Record<Card['character'], string> = {
 
 const CELEBRATION_IMAGE = '/card/cat/cat-celebration.png'
 
-type Feedback = { kind: 'match' | 'mismatch'; scoreDeltaLabel: string; id: number } | null
+type Feedback = { kind: 'match' | 'mismatch' | 'golden-match' | 'golden-missed'; scoreDeltaLabel: string; id: number } | null
 
 type MatchEffect = {
   id: number
@@ -47,6 +48,9 @@ type MatchEffect = {
   sourceY: number
   targetX: number
   targetY: number
+  timeX: number
+  timeY: number
+  isGolden: boolean
 }
 
 function PawIcon({ className }: { className?: string }) {
@@ -102,6 +106,8 @@ function CardButton({
   index,
   disabled,
   isMismatch,
+  isGolden,
+  goldenSelectionLocked,
   cardRef,
   onSelect,
 }: {
@@ -109,26 +115,40 @@ function CardButton({
   index: number
   disabled: boolean
   isMismatch: boolean
+  isGolden: boolean
+  goldenSelectionLocked: boolean
   cardRef: (element: HTMLButtonElement | null) => void
   onSelect: (cardId: string) => void
 }) {
   const isHidden = card.status === 'hidden'
   const isMatched = card.status === 'matched'
-  const label = isHidden ? `Hidden card ${index + 1}` : `${CHARACTER_LABELS[card.character]} cat card`
+  const isGoldenCoverVisible = isGolden && isHidden
+  const isDisabled = disabled || isMatched || (goldenSelectionLocked && !isGolden)
+  const label = isGoldenCoverVisible
+    ? 'Golden card: open to find its pair'
+    : isHidden
+      ? `Hidden card ${index + 1}`
+      : `${CHARACTER_LABELS[card.character]} cat card`
 
   return (
     <button
       ref={cardRef}
-      className={`card-button ${isHidden ? '' : 'is-revealed'} ${isMatched ? 'is-matched' : ''} ${isMismatch ? 'is-mismatch' : ''}`}
+      className={`card-button ${isHidden ? '' : 'is-revealed'} ${isMatched ? 'is-matched' : ''} ${isMismatch ? 'is-mismatch' : ''} ${isGoldenCoverVisible ? 'is-golden' : ''}`}
       type="button"
       aria-label={label}
       aria-pressed={!isHidden}
-      disabled={disabled || isMatched}
+      data-golden={isGolden ? 'true' : undefined}
+      disabled={isDisabled}
       onClick={() => onSelect(card.id)}
     >
       <span className="card-face card-back" aria-hidden="true">
         <img src="/card/cat-close.png" alt="" />
       </span>
+      {isGoldenCoverVisible && (
+        <span className="card-face golden-cover" aria-hidden="true">
+          <img src="/card/cat/golden-cat.png" alt="" />
+        </span>
+      )}
       <span className="card-face card-front" aria-hidden="true">
         <img src={CHARACTER_IMAGES[card.character]} alt="" />
       </span>
@@ -141,10 +161,12 @@ function Hud({
   state,
   feedback,
   scoreRef,
+  timeRef,
 }: {
   state: GameState
   feedback: Feedback
   scoreRef: (element: HTMLDivElement | null) => void
+  timeRef: (element: HTMLDivElement | null) => void
 }) {
   const isWarning = state.remainingMs <= 10_000 && state.remainingMs > 0 && state.phase !== 'ready'
   const warningLevel = !isWarning ? 'none' : Math.ceil(state.remainingMs / 1000) <= 3 ? 'critical' : 'warning'
@@ -162,7 +184,7 @@ function Hud({
         </strong>
         <FeedbackToast feedback={feedback} />
       </div>
-      <div className={`hud-stat hud-time ${isWarning ? 'is-warning' : ''} ${warningLevel === 'critical' ? 'is-critical' : ''}`} data-warning-level={warningLevel}>
+      <div ref={timeRef} className={`hud-stat hud-time ${isWarning ? 'is-warning' : ''} ${warningLevel === 'critical' ? 'is-critical' : ''}`} data-warning-level={warningLevel}>
         <span className="hud-label">Time</span>
         <strong className="hud-value">{formatTime(state.remainingMs)}</strong>
       </div>
@@ -175,8 +197,34 @@ function FeedbackToast({ feedback }: { feedback: Feedback }) {
 
   return (
     <div key={feedback.id} className={`feedback-toast feedback-${feedback.kind}`} role="status" aria-live="polite">
-      <strong>{feedback.kind === 'match' ? 'MATCH!' : 'MISMATCH!'}</strong>
+      <strong>
+        {feedback.kind === 'match'
+          ? 'MATCH!'
+          : feedback.kind === 'mismatch'
+            ? 'MISMATCH!'
+            : feedback.kind === 'golden-match'
+              ? 'GOLDEN MATCH!'
+              : 'GOLDEN MISSED!'}
+      </strong>
       <span>{feedback.scoreDeltaLabel}</span>
+    </div>
+  )
+}
+
+function GoldenTimer({ remainingMs }: { remainingMs: number }) {
+  const progress = Math.max(0, Math.min(100, remainingMs / GOLDEN_TIMER_MS * 100))
+  const level = remainingMs <= 1_000 ? 'critical' : remainingMs <= 2_000 ? 'warning' : 'normal'
+
+  return (
+    <div className="golden-timer" data-testid="golden-timer" data-timer-level={level} role="status" aria-live="polite">
+      <div className="golden-timer-heading">
+        <img className="golden-timer-icon" src="/card/cat/golden-cat.png" alt="" aria-hidden="true" />
+        <span>Golden Timer</span>
+        <strong>{(remainingMs / 1000).toFixed(1)}s</strong>
+      </div>
+      <div className="golden-timer-track" aria-hidden="true">
+        <span className="golden-timer-progress" style={{ width: `${progress}%` }} />
+      </div>
     </div>
   )
 }
@@ -187,6 +235,8 @@ function MatchEffectLayer({ effect, reducedMotion }: { effect: MatchEffect; redu
     '--match-y': `${effect.sourceY}px`,
     '--target-x': `${effect.targetX}px`,
     '--target-y': `${effect.targetY}px`,
+    '--time-x': `${effect.timeX}px`,
+    '--time-y': `${effect.timeY}px`,
     '--travel-x': `${effect.targetX - effect.sourceX}px`,
     '--travel-y': `${effect.targetY - effect.sourceY}px`,
   } as CSSProperties
@@ -209,6 +259,7 @@ function MatchEffectLayer({ effect, reducedMotion }: { effect: MatchEffect; redu
         <PawIcon className="paw-icon" />
       </span>
       <span className="match-effect-impact" />
+      {effect.isGolden && <span className="match-effect-impact match-effect-time-impact" />}
     </div>
   )
 }
@@ -268,6 +319,19 @@ function FirstTurnHintOverlay() {
   return (
     <div className="overlay overlay-first-turn-hint" role="status" aria-live="polite">
       <p className="first-turn-hint" lang="th">จับคู่ไพ่</p>
+    </div>
+  )
+}
+
+function GoldenAlertOverlay() {
+  return (
+    <div className="overlay overlay-golden-alert" data-testid="golden-alert" role="alert" aria-live="assertive">
+      <div className="overlay-card golden-alert-card">
+        <img className="golden-alert-cat" src="/card/cat/golden-cat.png" alt="" aria-hidden="true" />
+        <p className="eyebrow">GOLDEN CAT!</p>
+        <h2>Special card</h2>
+        <p className="golden-alert-instruction" lang="th">เปิดแมวทอง แล้วหาคู่ให้ทันใน 5 วินาที!</p>
+      </div>
     </div>
   )
 }
@@ -346,8 +410,10 @@ export default function App() {
   const soundEnabledRef = useRef(soundEnabled)
   const feedbackId = useRef(0)
   const warningSecondPlayed = useRef<number | null>(null)
+  const goldenSecondPlayed = useRef<number | null>(null)
   const frameRef = useRef<HTMLElement | null>(null)
   const scoreRef = useRef<HTMLDivElement | null>(null)
+  const timeRef = useRef<HTMLDivElement | null>(null)
   const cardRefs = useRef(new Map<string, HTMLButtonElement>())
   const matchEffectTimeout = useRef<number | null>(null)
   const impactSoundTimeout = useRef<number | null>(null)
@@ -397,19 +463,24 @@ export default function App() {
     if (newlyMatchedCards.length >= 2) {
       const frame = frameRef.current
       const score = scoreRef.current
+      const time = timeRef.current
       const sourceRects = newlyMatchedCards
         .slice(0, 2)
         .map((card) => cardRefs.current.get(card.id)?.getBoundingClientRect())
         .filter((rect): rect is DOMRect => Boolean(rect))
 
-      if (frame && score && sourceRects.length === 2) {
+      if (frame && score && time && sourceRects.length === 2) {
         const frameRect = frame.getBoundingClientRect()
         const scoreRect = score.getBoundingClientRect()
+        const timeRect = time.getBoundingClientRect()
         const sourceX = sourceRects.reduce((total, rect) => total + rect.left + rect.width / 2, 0) / sourceRects.length - frameRect.left
         const sourceY = sourceRects.reduce((total, rect) => total + rect.top + rect.height / 2, 0) / sourceRects.length - frameRect.top
         const targetX = scoreRect.left + scoreRect.width / 2 - frameRect.left
         const targetY = scoreRect.top + scoreRect.height / 2 - frameRect.top
-        const nextMatchEffect = { id: feedbackId.current + 1, sourceX, sourceY, targetX, targetY }
+        const timeX = timeRect.left + timeRect.width / 2 - frameRect.left
+        const timeY = timeRect.top + timeRect.height / 2 - frameRect.top
+        const isGolden = state.goldenOutcome === 'success' && previous.goldenOutcome !== 'success'
+        const nextMatchEffect = { id: feedbackId.current + 1, sourceX, sourceY, targetX, targetY, timeX, timeY, isGolden }
 
         if (matchEffectTimeout.current !== null) window.clearTimeout(matchEffectTimeout.current)
         setMatchEffect(nextMatchEffect)
@@ -420,7 +491,17 @@ export default function App() {
       }
     }
 
-    if (state.score > previous.score) {
+    const goldenOutcomeChanged = state.goldenOutcome !== previous.goldenOutcome && state.goldenOutcome !== null
+    if (goldenOutcomeChanged) {
+      feedbackId.current += 1
+      if (state.goldenOutcome === 'success') {
+        setFeedback({ kind: 'golden-match', scoreDeltaLabel: '+15 SCORE • +5s', id: feedbackId.current })
+        playSound('golden-match', soundEnabled)
+      } else {
+        setFeedback({ kind: 'golden-missed', scoreDeltaLabel: '-5s', id: feedbackId.current })
+        playSound('golden-missed', soundEnabled)
+      }
+    } else if (state.score > previous.score) {
       feedbackId.current += 1
       setFeedback({ kind: 'match', scoreDeltaLabel: '+10', id: feedbackId.current })
       playSound('match', soundEnabled)
@@ -432,6 +513,20 @@ export default function App() {
 
     if (state.phase === 'transitioning-round' && previous.phase !== 'transitioning-round') {
       playSound('round-complete', soundEnabled)
+    }
+
+    if (state.phase === 'golden-alert' && previous.phase !== 'golden-alert') {
+      playSound('golden-alert', soundEnabled)
+    }
+
+    if (state.phase === 'golden-playing') {
+      const goldenSecond = Math.ceil((state.goldenTimerMs ?? 0) / 1000)
+      if (goldenSecond <= 3 && goldenSecond > 0 && goldenSecond !== goldenSecondPlayed.current) {
+        goldenSecondPlayed.current = goldenSecond
+        playSound('golden-tick', soundEnabled, { urgent: true })
+      }
+    } else {
+      goldenSecondPlayed.current = null
     }
 
     if (state.phase === 'finished' && previous.phase !== 'finished') playSound('finish', soundEnabled)
@@ -492,14 +587,21 @@ export default function App() {
   }
 
   const boardLayout = getBoardLayout(state.round)
-  const cardsDisabled = state.phase !== 'playing'
+  const cardsDisabled = state.phase !== 'playing' && state.phase !== 'golden-playing'
+  const goldenSelectionLocked = state.phase === 'golden-playing' && state.selectedCardIds.length === 0
 
   return (
     <main className="app-shell">
       <section ref={frameRef} className={`game-frame ${prefersReducedMotion ? 'prefers-reduced-motion' : ''}`} data-motion={prefersReducedMotion ? 'reduced' : 'full'} aria-label="Cat Card matching game">
         <div className="game-backdrop" />
         <div className="game-content">
-          <Hud state={state} feedback={feedback} scoreRef={(element) => { scoreRef.current = element }} />
+          <Hud
+            state={state}
+            feedback={feedback}
+            scoreRef={(element) => { scoreRef.current = element }}
+            timeRef={(element) => { timeRef.current = element }}
+          />
+          {state.goldenTimerMs !== null && <GoldenTimer remainingMs={state.goldenTimerMs} />}
           <div className="board-wrap">
             {state.board.length > 0 && (
               <div
@@ -513,7 +615,15 @@ export default function App() {
                     card={card}
                     index={index}
                     disabled={cardsDisabled}
-                    isMismatch={state.phase === 'resolving-mismatch' && state.selectedCardIds.includes(card.id)}
+                    isMismatch={
+                      (state.phase === 'resolving-mismatch' || state.phase === 'golden-resolving-mismatch') &&
+                      state.selectedCardIds.includes(card.id)
+                    }
+                    isGolden={
+                      (state.goldenEventStatus === 'alert' || state.goldenEventStatus === 'active') &&
+                      state.goldenCardId === card.id
+                    }
+                    goldenSelectionLocked={goldenSelectionLocked}
                     cardRef={(element) => {
                       if (element) cardRefs.current.set(card.id, element)
                       else cardRefs.current.delete(card.id)
@@ -536,6 +646,7 @@ export default function App() {
           {state.phase === 'ready' && <StartOverlay onStart={handleStart} />}
           {state.phase === 'countdown' && <CountdownOverlay countdownMs={state.countdownMs} />}
           {state.phase === 'first-turn-hint' && <FirstTurnHintOverlay />}
+          {state.phase === 'golden-alert' && <GoldenAlertOverlay />}
           {state.phase === 'paused' && <PauseOverlay onResume={() => dispatch({ type: 'resume' })} />}
           {matchEffect && <MatchEffectLayer effect={matchEffect} reducedMotion={prefersReducedMotion} />}
           {state.remainingMs <= 10_000 && state.remainingMs > 0 && state.phase !== 'ready' && (

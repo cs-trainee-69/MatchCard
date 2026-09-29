@@ -1,4 +1,15 @@
-type SoundName = 'flip' | 'match' | 'match-impact' | 'mismatch' | 'warning' | 'round-complete' | 'finish'
+type SoundName =
+  | 'flip'
+  | 'match'
+  | 'match-impact'
+  | 'mismatch'
+  | 'warning'
+  | 'round-complete'
+  | 'finish'
+  | 'golden-alert'
+  | 'golden-tick'
+  | 'golden-match'
+  | 'golden-missed'
 
 type SoundOptions = { urgent?: boolean }
 
@@ -21,6 +32,10 @@ const SOUND_CONFIG: Record<SoundName, { frequency: number; duration: number; typ
   warning: { frequency: 520, duration: 0.12, type: 'square', gain: 0.025 },
   'round-complete': { frequency: 660, duration: 0.16, type: 'triangle', gain: 0.05 },
   finish: { frequency: 260, duration: 0.3, type: 'triangle', gain: 0.05 },
+  'golden-alert': { frequency: 880, duration: 0.22, type: 'triangle', gain: 0.065 },
+  'golden-tick': { frequency: 760, duration: 0.08, type: 'square', gain: 0.028 },
+  'golden-match': { frequency: 1040, duration: 0.2, type: 'triangle', gain: 0.07 },
+  'golden-missed': { frequency: 150, duration: 0.18, type: 'sawtooth', gain: 0.045 },
 }
 
 let matchVariant = 0

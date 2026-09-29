@@ -9,7 +9,7 @@
 _Avoid_: Card Type, Skin
 
 **Game Session**:
-การเล่นหนึ่งครั้งที่ใช้นาฬิกาต่อเนื่อง 120 วินาที ครอบคลุมหลาย Round และสิ้นสุดเมื่อเวลาหมด
+การเล่นหนึ่งครั้งที่เริ่มด้วยนาฬิกาต่อเนื่อง 120 วินาที ครอบคลุมหลาย Round และสิ้นสุดเมื่อเวลาหมด โดย Golden Card Event อาจเพิ่มเวลาให้ Game Session เกินค่าเริ่มต้นได้
 _Avoid_: Run, Playthrough
 
 **Round**:
@@ -51,3 +51,15 @@ _Avoid_: Start Screen, Intro Card
 **First-Turn Hint**:
 ข้อความแนะนำให้จับคู่ไพ่ซึ่งแสดงครั้งเดียวก่อนการเลือกไพ่ครั้งแรกของ Game Session
 _Avoid_: Tutorial, Round Hint
+
+**Golden Card Event**:
+เหตุการณ์หนึ่งครั้งใน Game Session ที่ไปถึง Round 3 ซึ่งผู้เล่นต้องเปิด Golden Card และ Match คู่ของมันก่อน Golden Timer หมด
+_Avoid_: Golden Round, Bonus Round
+
+**Golden Card**:
+Card ที่ยังคว่ำและได้รับ Golden Cover ชั่วคราว โดยยังคง Cat Character เดิมไว้ข้างใต้
+_Avoid_: Golden Cat Character, Bonus Card
+
+**Golden Timer**:
+เวลาห้าวินาทีสำหรับทำ Golden Match ซึ่งแยกจากนาฬิกาหลักของ Game Session
+_Avoid_: Game Timer, Bonus Time
