@@ -3,6 +3,7 @@ export const FIRST_TURN_HINT_MS = 1_200
 export const GOLDEN_ALERT_MS = 2_500
 export const GOLDEN_TIMER_MS = 5_000
 export const GOLDEN_EVENT_MIN_REMAINING_MS = 20_000
+export const GOLDEN_EVENT_MIN_HIDDEN_PAIRS = 2
 export const ROUND_LAYOUTS = [
   { rows: 2, columns: 2, cardCount: 4 },
   { rows: 3, columns: 2, cardCount: 6 },
@@ -168,7 +169,7 @@ function chooseGoldenCardId(board: Card[], random: () => number): string | null 
     .map((character) => board.filter((card) => card.character === character && card.status === 'hidden'))
     .filter((pair) => pair.length === 2)
 
-  if (hiddenPairs.length === 0) return null
+  if (hiddenPairs.length < GOLDEN_EVENT_MIN_HIDDEN_PAIRS) return null
   const pair = hiddenPairs[randomIndex(hiddenPairs.length, random)]
   return pair[randomIndex(pair.length, random)].id
 }

@@ -525,7 +525,7 @@ describe('Golden Card Event', () => {
     expect(session.getState().goldenEventStatus).toBe('completed')
   })
 
-  it('transitions the Board after a Golden Match completes the final hidden pair', () => {
+  it('defers the Golden Card Event when only the final hidden pair remains', () => {
     const session = createGameSession({ random: () => 0 })
     advanceToRoundThree(session)
     const characters = [...new Set(session.getState().board.map((card) => card.character))]
@@ -536,21 +536,27 @@ describe('Golden Card Event', () => {
     }
 
     session.dispatch({ type: 'tick', deltaMs: 3000 })
-    session.dispatch({ type: 'tick', deltaMs: 2500 })
-    const stateBeforeMatch = session.getState()
-    const goldenCard = stateBeforeMatch.board.find((card) => card.id === stateBeforeMatch.goldenCardId)!
-    const matchingCard = stateBeforeMatch.board.find(
-      (card) => card.id !== goldenCard.id && card.character === goldenCard.character,
-    )!
-    session.dispatch({ type: 'select-card', cardId: goldenCard.id })
-    session.dispatch({ type: 'select-card', cardId: matchingCard.id })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(0)
+
+    const scoreBeforeFinalPair = session.getState().score
+    const finalPair = session.getState().board.filter((card) => card.status === 'hidden')
+    session.dispatch({ type: 'select-card', cardId: finalPair[0].id })
+    session.dispatch({ type: 'select-card', cardId: finalPair[1].id })
 
     expect(session.getState().phase).toBe('transitioning-round')
     expect(session.getState().transitionRemainingMs).toBe(800)
-    expect(session.getState().score).toBe(stateBeforeMatch.score + 15)
+    expect(session.getState().score).toBe(scoreBeforeFinalPair + 10)
     session.dispatch({ type: 'tick', deltaMs: 800 })
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().round).toBe(4)
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(0)
+
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('golden-alert')
+    expect(session.getState().goldenCardId).not.toBeNull()
   })
 
   it('finishes without an extra Golden penalty when the main clock reaches zero first', () => {
