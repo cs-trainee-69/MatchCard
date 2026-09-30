@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { createGameSession, getBoardLayout, type GameSession } from './gameSession'
-import { createGameConfig } from './gameConfig'
+import { createGameSession as createConfiguredGameSession, getBoardLayout, type GameSession } from './gameSession'
+import { createGameConfig, type GameConfig } from './gameConfig'
+
+const DEFAULT_TEST_CONFIG = createGameConfig()
+
+function createGameSession(options: { config?: GameConfig; durationMs?: number; random?: () => number; highScore?: number } = {}) {
+  const config = options.config ?? (options.durationMs === undefined
+    ? DEFAULT_TEST_CONFIG
+    : createGameConfig({ session: { durationMs: options.durationMs } }))
+  return createConfiguredGameSession({ config, random: options.random, highScore: options.highScore })
+}
 
 function startPlaying(session: GameSession) {
   session.dispatch({ type: 'begin' })
@@ -33,7 +42,7 @@ function startGoldenEvent(session: GameSession) {
 describe('Board layout', () => {
   it('uses the requested rows by columns layout for each round', () => {
     const layouts = [1, 2, 3, 4, 5, 6, 7].map((round) => {
-      const { rows, columns } = getBoardLayout(round)
+      const { rows, columns } = getBoardLayout(round, DEFAULT_TEST_CONFIG)
       return `${rows}x${columns}`
     })
 
@@ -345,7 +354,7 @@ describe('Game Session start', () => {
       flow: { countdownMs: 10, firstTurnHintMs: 20, mismatchRevealMs: 30, roundTransitionMs: 40 },
       scoring: { matchScore: 4, mismatchPenalty: 2 },
     })
-    const session = createGameSession(config, { random: () => 0 })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
 
     session.dispatch({ type: 'begin' })
     expect(session.getState().countdownMs).toBe(10)
@@ -372,7 +381,7 @@ describe('Game Session start', () => {
 
   it('keeps zero-duration flow phases as separate ticks', () => {
     const config = createGameConfig({ flow: { countdownMs: 0, firstTurnHintMs: 0 } })
-    const session = createGameSession(config, { random: () => 0 })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
 
     session.dispatch({ type: 'begin' })
     expect(session.getState().phase).toBe('countdown')
@@ -381,9 +390,49 @@ describe('Game Session start', () => {
     session.dispatch({ type: 'tick', deltaMs: 0 })
     expect(session.getState().phase).toBe('playing')
   })
+
+  it('uses the configured Round transition duration', () => {
+    const config = createGameConfig({ flow: { roundTransitionMs: 40 } })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
+    startPlaying(session)
+
+    const characters = [...new Set(session.getState().board.map((card) => card.character))]
+    for (const character of characters) {
+      const pair = session.getState().board.filter((card) => card.character === character)
+      session.dispatch({ type: 'select-card', cardId: pair[0].id })
+      session.dispatch({ type: 'select-card', cardId: pair[1].id })
+    }
+
+    expect(session.getState().phase).toBe('transitioning-round')
+    expect(session.getState().transitionRemainingMs).toBe(40)
+    session.dispatch({ type: 'tick', deltaMs: 39 })
+    expect(session.getState().phase).toBe('transitioning-round')
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().round).toBe(2)
+  })
 })
 
 describe('Golden Card Event', () => {
+  it('honors a custom start Round, the inclusive schedule upper bound, and the exact time threshold', () => {
+    const config = createGameConfig({
+      rounds: { layouts: [{ rows: 2, columns: 2, cardCount: 4 }] },
+      goldenEvent: {
+        startRound: 2,
+        scheduleDelayMinMs: 11,
+        scheduleDelayMaxMs: 13,
+        minRemainingMs: 120_000,
+      },
+    })
+    const session = createConfiguredGameSession(config, { random: () => 0.999999 })
+    startPlaying(session)
+    completeCurrentBoard(session)
+
+    expect(session.getState().round).toBe(2)
+    expect(session.getState().remainingMs).toBe(120_000)
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(13)
+  })
+
   it('uses independent Golden Timer, bonus, and penalty config fields', () => {
     const config = createGameConfig({
       goldenEvent: {
@@ -393,7 +442,7 @@ describe('Golden Card Event', () => {
         failureTimePenaltyMs: 321,
       },
     })
-    const session = createGameSession(config, { random: () => 0 })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
     startGoldenEvent(session)
 
     const beforeMatch = session.getState()

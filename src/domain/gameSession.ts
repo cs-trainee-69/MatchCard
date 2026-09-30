@@ -1,18 +1,7 @@
 import { CAT_CHARACTER_IDS, type CatCharacterId } from './catCharacters'
-import { DEFAULT_RESOLVED_GAME_CONFIG, type GameConfig, type RoundLayout } from './gameConfig'
+import { createGameConfig, type GameConfig, type RoundLayout } from './gameConfig'
 
 export { CAT_CHARACTER_IDS, type CatCharacterId } from './catCharacters'
-export {
-  DEFAULT_GAME_CONFIG,
-  DEFAULT_RESOLVED_GAME_CONFIG,
-  createGameConfig,
-  formatRuleDurationMs,
-  InvalidGameConfigError,
-  type GameConfig,
-  type GameConfigOverrides,
-  type GameConfigShape,
-  type RoundLayout,
-} from './gameConfig'
 
 export type BoardSize = number
 export type BoardLayout = RoundLayout
@@ -99,7 +88,7 @@ export type GameSessionRuntimeOptions = {
 }
 
 export type GameSessionOptions = GameSessionRuntimeOptions & {
-  config?: GameConfig
+  config: GameConfig
 }
 
 export type GameSession = {
@@ -119,7 +108,7 @@ function shuffle<T>(items: T[], random: () => number): T[] {
   return shuffled
 }
 
-export function getBoardLayout(round: number, config: GameConfig = DEFAULT_RESOLVED_GAME_CONFIG): BoardLayout {
+export function getBoardLayout(round: number, config: GameConfig): BoardLayout {
   const roundIndex = Math.min(Math.max(Math.floor(round), 1) - 1, config.rounds.layouts.length - 1)
   return config.rounds.layouts[roundIndex]
 }
@@ -169,15 +158,16 @@ function isGameConfig(value: GameConfig | GameSessionOptions): value is GameConf
   return 'session' in value && 'rounds' in value && 'scoring' in value && 'flow' in value && 'goldenEvent' in value
 }
 
-export function createGameSession(options?: GameSessionOptions): GameSession
+export function createGameSession(options: GameSessionOptions): GameSession
 export function createGameSession(config: GameConfig, runtimeOptions?: GameSessionRuntimeOptions): GameSession
 export function createGameSession(
-  configOrOptions: GameConfig | GameSessionOptions = {},
+  configOrOptions: GameConfig | GameSessionOptions,
   runtimeOptions: GameSessionRuntimeOptions = {},
 ): GameSession {
-  const config = isGameConfig(configOrOptions)
+  const configInput = isGameConfig(configOrOptions)
     ? configOrOptions
-    : configOrOptions.config ?? DEFAULT_RESOLVED_GAME_CONFIG
+    : configOrOptions.config
+  const config = createGameConfig(configInput)
   const options = isGameConfig(configOrOptions) ? runtimeOptions : configOrOptions
   const random = options.random ?? Math.random
   let state: GameState = {

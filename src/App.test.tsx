@@ -52,4 +52,31 @@ describe('App with an active Game Config', () => {
     expect(screen.getByTestId('golden-timer')).toBeTruthy()
     expect(screen.getByTestId('golden-timer').querySelector('strong')?.textContent).toBe('2.5s')
   })
+
+  it('uses configured Score values in the visible Match feedback', () => {
+    const config = createGameConfig({
+      rounds: { layouts: [{ rows: 2, columns: 2, cardCount: 4 }] },
+      flow: { countdownMs: 0, firstTurnHintMs: 0 },
+      scoring: { matchScore: 7, mismatchPenalty: 3 },
+      goldenEvent: { startRound: 99 },
+    })
+
+    render(<App config={config} />)
+    fireEvent.click(screen.getByRole('button', { name: 'แตะเพื่อเริ่ม' }))
+    act(() => vi.advanceTimersByTime(100))
+    act(() => vi.advanceTimersByTime(100))
+    act(() => vi.advanceTimersByTime(100))
+
+    const cardsByCharacterImage = new Map<string, HTMLButtonElement[]>()
+    for (const card of document.querySelectorAll<HTMLButtonElement>('button.card-button')) {
+      const image = card.querySelector('.card-front img')?.getAttribute('src')
+      if (!image) continue
+      cardsByCharacterImage.set(image, [...(cardsByCharacterImage.get(image) ?? []), card])
+    }
+    const matchingPair = [...cardsByCharacterImage.values()].find((cards) => cards.length === 2)!
+    fireEvent.click(matchingPair[0])
+    fireEvent.click(matchingPair[1])
+
+    expect(screen.getByRole('status').textContent).toContain('+7')
+  })
 })

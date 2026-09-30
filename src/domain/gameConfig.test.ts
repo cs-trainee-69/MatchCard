@@ -79,9 +79,10 @@ describe('Game Config validation', () => {
 
   it('reports precise paths for invalid numeric values', () => {
     invalid({ session: { durationMs: Number.NaN } }, 'session.durationMs')
+    invalid({ session: { durationMs: Number.POSITIVE_INFINITY } }, 'session.durationMs')
+    invalid({ flow: { countdownMs: Number.MAX_SAFE_INTEGER + 1 } }, 'flow.countdownMs')
     invalid({ flow: { mismatchRevealMs: 1.5 } }, 'flow.mismatchRevealMs')
     invalid({ goldenEvent: { successTimeBonusMs: -1 } }, 'goldenEvent.successTimeBonusMs')
-    invalid({ goldenEvent: { minHiddenPairs: 11 } }, 'goldenEvent.minHiddenPairs')
     invalid({ rounds: { layouts: [{ rows: 2.5, columns: 2, cardCount: 4 }] } }, 'rounds.layouts[0].rows')
   })
 
@@ -114,6 +115,12 @@ describe('Game Config validation', () => {
     expect(() => createGameConfig({ session: { durationMs: 0 } })).toThrowError(/session\.durationMs/)
     expect(() => createGameConfig({ goldenEvent: { timerMs: 0 } })).toThrowError(/goldenEvent\.timerMs/)
   })
+
+  it('allows a Golden Card Event threshold that defers activation indefinitely', () => {
+    const config = createGameConfig({ goldenEvent: { minHiddenPairs: 11 } })
+
+    expect(config.goldenEvent.minHiddenPairs).toBe(11)
+  })
 })
 
 describe('Game Config public consumers', () => {
@@ -124,7 +131,8 @@ describe('Game Config public consumers', () => {
     })
     const session = createGameSession(config, { random: () => 0 })
 
-    expect(session.getConfig()).toBe(config)
+    expect(session.getConfig()).toEqual(config)
+    expect(session.getConfig()).not.toBe(config)
     expect(getBoardLayout(7, session.getConfig())).toEqual({ rows: 2, columns: 2, cardCount: 4 })
     session.dispatch({ type: 'begin' })
     expect(session.getState().remainingMs).toBe(10_000)

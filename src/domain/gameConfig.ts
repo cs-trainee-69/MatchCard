@@ -159,9 +159,6 @@ function validateConfig(config: GameConfigShape): void {
   }
   validateNonnegativeInteger(config.goldenEvent.minRemainingMs, 'goldenEvent.minRemainingMs')
   validateNonnegativeInteger(config.goldenEvent.minHiddenPairs, 'goldenEvent.minHiddenPairs', { positive: true })
-  if (config.goldenEvent.minHiddenPairs > CAT_CHARACTER_IDS.length) {
-    fail('goldenEvent.minHiddenPairs', `must not exceed ${CAT_CHARACTER_IDS.length}`)
-  }
   validateNonnegativeInteger(config.goldenEvent.alertMs, 'goldenEvent.alertMs')
   validateNonnegativeInteger(config.goldenEvent.timerMs, 'goldenEvent.timerMs', { positive: true })
   validateNonnegativeInteger(config.goldenEvent.successScoreBonus, 'goldenEvent.successScoreBonus')
@@ -201,7 +198,6 @@ export function createGameConfig(overrides: GameConfigOverrides = {}): GameConfi
 }
 
 export const DEFAULT_RESOLVED_GAME_CONFIG: GameConfig = createGameConfig()
-export const DEFAULT_GAME_CONFIG = DEFAULT_RESOLVED_GAME_CONFIG
 
 export function formatRuleDurationMs(durationMs: number): string {
   const seconds = durationMs / 1000
