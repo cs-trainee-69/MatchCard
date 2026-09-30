@@ -411,6 +411,7 @@ export default function App({ config: requestedConfig }: { config?: GameConfig }
   const previousState = useRef(state)
   const soundEnabledRef = useRef(soundEnabled)
   const feedbackId = useRef(0)
+  const countdownSecondPlayed = useRef<number | null>(null)
   const warningSecondPlayed = useRef<number | null>(null)
   const goldenSecondPlayed = useRef<number | null>(null)
   const frameRef = useRef<HTMLElement | null>(null)
@@ -550,6 +551,19 @@ export default function App({ config: requestedConfig }: { config?: GameConfig }
     if (impactSoundTimeout.current !== null) window.clearTimeout(impactSoundTimeout.current)
     setMatchEffect(null)
   }, [state.phase])
+
+  useEffect(() => {
+    if (state.phase !== 'countdown' || state.countdownMs === null || state.countdownMs <= 0) {
+      countdownSecondPlayed.current = null
+      return
+    }
+
+    const countdownSecond = Math.ceil(state.countdownMs / 1000)
+    if (countdownSecond !== countdownSecondPlayed.current) {
+      countdownSecondPlayed.current = countdownSecond
+      playSound('countdown', soundEnabled, { urgent: countdownSecond === 1 })
+    }
+  }, [state.phase, state.countdownMs, soundEnabled])
 
   useEffect(() => {
     const warningSecond = Math.ceil(state.remainingMs / 1000)

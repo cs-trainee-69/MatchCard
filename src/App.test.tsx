@@ -2,12 +2,16 @@
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { playSound } from './audio'
 import App from './App'
 import { createGameConfig } from './domain/gameConfig'
+
+vi.mock('./audio', () => ({ playSound: vi.fn() }))
 
 describe('App with an active Game Config', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.mocked(playSound).mockClear()
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: () => ({
@@ -78,5 +82,19 @@ describe('App with an active Game Config', () => {
     fireEvent.click(matchingPair[1])
 
     expect(screen.getByRole('status').textContent).toContain('+7')
+  })
+
+  it('plays one sound for each visible Countdown number', () => {
+    render(<App config={createGameConfig({ goldenEvent: { startRound: 99 } })} />)
+    fireEvent.click(screen.getByRole('button', { name: 'แตะเพื่อเริ่ม' }))
+
+    const countdownCalls = () => vi.mocked(playSound).mock.calls.filter(([name]) => name === 'countdown')
+    expect(countdownCalls()).toHaveLength(1)
+
+    act(() => vi.advanceTimersByTime(1_000))
+    expect(countdownCalls()).toHaveLength(2)
+
+    act(() => vi.advanceTimersByTime(1_000))
+    expect(countdownCalls()).toHaveLength(3)
   })
 })

@@ -3,6 +3,7 @@ type SoundName =
   | 'match'
   | 'match-impact'
   | 'mismatch'
+  | 'countdown'
   | 'warning'
   | 'round-complete'
   | 'finish'
@@ -29,6 +30,7 @@ const SOUND_CONFIG: Record<SoundName, { frequency: number; duration: number; typ
   match: { frequency: 660, duration: 0.16, type: 'triangle', gain: 0.06 },
   'match-impact': { frequency: 980, duration: 0.1, type: 'sine', gain: 0.035 },
   mismatch: { frequency: 180, duration: 0.13, type: 'sine', gain: 0.045 },
+  countdown: { frequency: 560, duration: 0.1, type: 'square', gain: 0.03 },
   warning: { frequency: 520, duration: 0.12, type: 'square', gain: 0.025 },
   'round-complete': { frequency: 660, duration: 0.16, type: 'triangle', gain: 0.05 },
   finish: { frequency: 260, duration: 0.3, type: 'triangle', gain: 0.05 },
