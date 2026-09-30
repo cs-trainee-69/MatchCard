@@ -1,0 +1,37 @@
+@media (prefers-reduced-motion: reduce) {
+  .card-button,
+  .hud-time,
+  .score-value,
+  .feedback-toast,
+  .round-celebration-card,
+  .round-celebration-cat,
+  .round-confetti-piece,
+  .result-card,
+  .result-cat-card,
+  .start-floating-copy,
+  .start-cat,
+  .result-sparkles span,
+  .urgency-vignette,
+  .mismatch-mark,
+  .golden-alert-cat { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  .card-face { transition-duration: 0.01ms !important; }
+}
+
+.prefers-reduced-motion .card-button.is-matched,
+.prefers-reduced-motion .card-button.is-mismatch,
+.prefers-reduced-motion .hud-time,
+.prefers-reduced-motion .score-value,
+.prefers-reduced-motion .feedback-toast,
+.prefers-reduced-motion .round-celebration-card,
+.prefers-reduced-motion .round-celebration-cat,
+.prefers-reduced-motion .round-confetti-piece,
+.prefers-reduced-motion .result-card,
+.prefers-reduced-motion .result-cat-card,
+.prefers-reduced-motion .start-floating-copy,
+.prefers-reduced-motion .start-cat,
+.prefers-reduced-motion .result-sparkles span,
+.prefers-reduced-motion .urgency-vignette,
+.prefers-reduced-motion .mismatch-mark,
+.prefers-reduced-motion .golden-alert-cat { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+.prefers-reduced-motion .card-button.is-golden::after { animation: none; }
+.prefers-reduced-motion .card-face { transition-duration: 0.01ms !important; }

@@ -77,7 +77,7 @@ const DEFAULT_GAME_CONFIG_VALUES: GameConfigShape = {
   },
   flow: {
     countdownMs: 3_000,
-    firstTurnHintMs: 1_200,
+    firstTurnHintMs: 2_000,
     mismatchRevealMs: 700,
     roundTransitionMs: 800,
   },

@@ -18,7 +18,7 @@ describe('Game Config defaults', () => {
     expect(config.scoring).toEqual({ matchScore: 10, mismatchPenalty: 1 })
     expect(config.flow).toEqual({
       countdownMs: 3_000,
-      firstTurnHintMs: 1_200,
+      firstTurnHintMs: 2_000,
       mismatchRevealMs: 700,
       roundTransitionMs: 800,
     })

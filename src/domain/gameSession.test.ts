@@ -14,7 +14,7 @@ function createGameSession(options: { config?: GameConfig; durationMs?: number; 
 function startPlaying(session: GameSession) {
   session.dispatch({ type: 'begin' })
   session.dispatch({ type: 'tick', deltaMs: 3000 })
-  session.dispatch({ type: 'tick', deltaMs: 1200 })
+  session.dispatch({ type: 'tick', deltaMs: 2000 })
 }
 
 function completeCurrentBoard(session: GameSession) {
@@ -64,10 +64,10 @@ describe('Game Session start', () => {
 
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     expect(session.getState().phase).toBe('first-turn-hint')
-    expect(session.getState().firstTurnHintMs).toBe(1200)
+    expect(session.getState().firstTurnHintMs).toBe(2000)
     expect(session.getState().remainingMs).toBe(120000)
 
-    session.dispatch({ type: 'tick', deltaMs: 1200 })
+    session.dispatch({ type: 'tick', deltaMs: 2000 })
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().remainingMs).toBe(120000)
   })
@@ -82,7 +82,7 @@ describe('Game Session start', () => {
     session.dispatch({ type: 'select-card', cardId: session.getState().board[0].id })
     expect(session.getState().selectedCardIds).toEqual([])
 
-    session.dispatch({ type: 'tick', deltaMs: 1199 })
+    session.dispatch({ type: 'tick', deltaMs: 1999 })
     expect(session.getState().phase).toBe('first-turn-hint')
     expect(session.getState().firstTurnHintMs).toBe(1)
     session.dispatch({ type: 'tick', deltaMs: 1 })
@@ -314,7 +314,7 @@ describe('Game Session start', () => {
     expect(session.getState().countdownMs).toBe(3000)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     expect(session.getState().phase).toBe('first-turn-hint')
-    session.dispatch({ type: 'tick', deltaMs: 1200 })
+    session.dispatch({ type: 'tick', deltaMs: 2000 })
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().remainingMs).toBe(120000)
   })
