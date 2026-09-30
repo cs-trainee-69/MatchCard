@@ -1,8 +1,10 @@
 type SoundName =
+  | 'start'
   | 'flip'
   | 'match'
   | 'match-impact'
   | 'mismatch'
+  | 'countdown'
   | 'warning'
   | 'round-complete'
   | 'finish'
@@ -25,10 +27,12 @@ function getAudioContext(): AudioContext | null {
 }
 
 const SOUND_CONFIG: Record<SoundName, { frequency: number; duration: number; type: OscillatorType; gain: number }> = {
+  start: { frequency: 520, duration: 0.18, type: 'triangle', gain: 0.06 },
   flip: { frequency: 420, duration: 0.055, type: 'sine', gain: 0.035 },
   match: { frequency: 660, duration: 0.16, type: 'triangle', gain: 0.06 },
   'match-impact': { frequency: 980, duration: 0.1, type: 'sine', gain: 0.035 },
   mismatch: { frequency: 180, duration: 0.13, type: 'sine', gain: 0.045 },
+  countdown: { frequency: 560, duration: 0.1, type: 'square', gain: 0.03 },
   warning: { frequency: 520, duration: 0.12, type: 'square', gain: 0.025 },
   'round-complete': { frequency: 660, duration: 0.16, type: 'triangle', gain: 0.05 },
   finish: { frequency: 260, duration: 0.3, type: 'triangle', gain: 0.05 },
@@ -39,6 +43,12 @@ const SOUND_CONFIG: Record<SoundName, { frequency: number; duration: number; typ
 }
 
 let matchVariant = 0
+let delayedRoundCompleteTimeouts: number[] = []
+
+export function cancelDelayedSounds(): void {
+  delayedRoundCompleteTimeouts.forEach((timeout) => window.clearTimeout(timeout))
+  delayedRoundCompleteTimeouts = []
+}
 
 function playTone(
   context: AudioContext,
@@ -78,8 +88,14 @@ export function playSound(name: SoundName, enabled: boolean, options: SoundOptio
   }
 
   if (name === 'round-complete') {
+    cancelDelayedSounds()
     ;[660, 780, 980].forEach((frequency, index) => {
-      window.setTimeout(() => playTone(context, { ...config, frequency, duration: 0.18 }, options), index * 85)
+      let timeout: number
+      timeout = window.setTimeout(() => {
+        delayedRoundCompleteTimeouts = delayedRoundCompleteTimeouts.filter((pendingTimeout) => pendingTimeout !== timeout)
+        playTone(context, { ...config, frequency, duration: 0.18 }, options)
+      }, index * 85)
+      delayedRoundCompleteTimeouts.push(timeout)
     })
     return
   }

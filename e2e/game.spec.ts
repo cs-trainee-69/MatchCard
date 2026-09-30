@@ -8,7 +8,7 @@ async function startPlaying(page: Page) {
   await page.clock.fastForward(3000)
   await expect(page.getByText('จับคู่ไพ่', { exact: true })).toBeVisible()
   await expect(page.locator('.hud-time > strong')).toHaveText('2:00')
-  await page.clock.fastForward(1200)
+  await page.clock.fastForward(2000)
   await expect(page.getByText('จับคู่ไพ่', { exact: true })).toBeHidden()
 }
 
@@ -136,7 +136,7 @@ test('starts the mobile Game Session and exposes the first Board', async ({ page
   await expect(page.getByText('จับคู่ไพ่', { exact: true })).toBeVisible()
   await expect(page.locator('.hud-time > strong')).toHaveText('2:00')
   await expect(page.locator('button.card-button').first()).toBeDisabled()
-  await page.clock.fastForward(1200)
+  await page.clock.fastForward(2000)
   await expect(page.getByText('จับคู่ไพ่', { exact: true })).toBeHidden()
   await expect(page.getByText('Round', { exact: true })).toBeVisible()
   await expect(page.getByText('Score', { exact: true })).toBeVisible()
@@ -260,6 +260,15 @@ test('announces and locks the Golden Card Event before its Golden Timer begins',
   await goldenCard.click()
   await expect(page.locator('button.card-button.is-revealed').filter({ has: page.locator('.golden-cover') })).toHaveCount(0)
   await expect(page.locator('button.card-button.is-revealed .card-front img')).toHaveCount(1)
+})
+
+test('fits the Golden Card artwork to the card frame', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await startGoldenPlaying(page)
+
+  const goldenCard = page.locator('button.card-button[data-golden="true"]')
+  await expect(goldenCard).toHaveCount(1)
+  await expect(goldenCard.locator('.golden-cover img')).toHaveCSS('object-fit', 'cover')
 })
 
 test('awards the Golden Match bonus through the visible Board', async ({ page }) => {

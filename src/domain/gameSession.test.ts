@@ -1,10 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { createGameSession, getBoardLayout, type GameSession } from './gameSession'
+import { createGameSession as createConfiguredGameSession, getBoardLayout, type GameSession } from './gameSession'
+import { createGameConfig, type GameConfig } from './gameConfig'
+
+const DEFAULT_TEST_CONFIG = createGameConfig()
+
+function createGameSession(options: { config?: GameConfig; durationMs?: number; random?: () => number; highScore?: number } = {}) {
+  const config = options.config ?? (options.durationMs === undefined
+    ? DEFAULT_TEST_CONFIG
+    : createGameConfig({ session: { durationMs: options.durationMs } }))
+  return createConfiguredGameSession({ config, random: options.random, highScore: options.highScore })
+}
 
 function startPlaying(session: GameSession) {
   session.dispatch({ type: 'begin' })
   session.dispatch({ type: 'tick', deltaMs: 3000 })
-  session.dispatch({ type: 'tick', deltaMs: 1200 })
+  session.dispatch({ type: 'tick', deltaMs: 2000 })
 }
 
 function completeCurrentBoard(session: GameSession) {
@@ -32,7 +42,7 @@ function startGoldenEvent(session: GameSession) {
 describe('Board layout', () => {
   it('uses the requested rows by columns layout for each round', () => {
     const layouts = [1, 2, 3, 4, 5, 6, 7].map((round) => {
-      const { rows, columns } = getBoardLayout(round)
+      const { rows, columns } = getBoardLayout(round, DEFAULT_TEST_CONFIG)
       return `${rows}x${columns}`
     })
 
@@ -54,10 +64,10 @@ describe('Game Session start', () => {
 
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     expect(session.getState().phase).toBe('first-turn-hint')
-    expect(session.getState().firstTurnHintMs).toBe(1200)
+    expect(session.getState().firstTurnHintMs).toBe(2000)
     expect(session.getState().remainingMs).toBe(120000)
 
-    session.dispatch({ type: 'tick', deltaMs: 1200 })
+    session.dispatch({ type: 'tick', deltaMs: 2000 })
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().remainingMs).toBe(120000)
   })
@@ -72,7 +82,7 @@ describe('Game Session start', () => {
     session.dispatch({ type: 'select-card', cardId: session.getState().board[0].id })
     expect(session.getState().selectedCardIds).toEqual([])
 
-    session.dispatch({ type: 'tick', deltaMs: 1199 })
+    session.dispatch({ type: 'tick', deltaMs: 1999 })
     expect(session.getState().phase).toBe('first-turn-hint')
     expect(session.getState().firstTurnHintMs).toBe(1)
     session.dispatch({ type: 'tick', deltaMs: 1 })
@@ -156,7 +166,7 @@ describe('Game Session start', () => {
   })
 
   it('continues counting down while a Mismatch is being revealed', () => {
-    const session = createGameSession({ durationMs: 1000, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 1000 } }), random: () => 0 })
     startPlaying(session)
     const [firstCard, secondCard] = session.getState().board
 
@@ -198,7 +208,7 @@ describe('Game Session start', () => {
   })
 
   it('finishes the Game Session at zero and preserves the best High Score', () => {
-    const session = createGameSession({ durationMs: 1000, highScore: 7, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 1000 } }), highScore: 7, random: () => 0 })
     startPlaying(session)
     session.dispatch({ type: 'tick', deltaMs: 999 })
 
@@ -213,7 +223,7 @@ describe('Game Session start', () => {
   })
 
   it('resolves a second-card Mismatch accepted before zero before finishing', () => {
-    const session = createGameSession({ durationMs: 1, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 1 } }), random: () => 0 })
     startPlaying(session)
     const [firstCard, secondCard] = session.getState().board
 
@@ -229,7 +239,7 @@ describe('Game Session start', () => {
   })
 
   it('updates High Score when the finished Score beats the saved value', () => {
-    const session = createGameSession({ durationMs: 1000, highScore: 7, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 1000 } }), highScore: 7, random: () => 0 })
     startPlaying(session)
     const [firstCard, matchingCard] = session.getState().board.filter(
       (card, _, board) => card.character === board[0].character,
@@ -304,7 +314,7 @@ describe('Game Session start', () => {
     expect(session.getState().countdownMs).toBe(3000)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     expect(session.getState().phase).toBe('first-turn-hint')
-    session.dispatch({ type: 'tick', deltaMs: 1200 })
+    session.dispatch({ type: 'tick', deltaMs: 2000 })
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().remainingMs).toBe(120000)
   })
@@ -337,9 +347,117 @@ describe('Game Session start', () => {
     expect(session.getState().firstTurnHintMs).toBeNull()
     expect(session.getState().remainingMs).toBe(120000)
   })
+
+  it('uses injected flow and scoring rules through the public Session API', () => {
+    const config = createGameConfig({
+      rounds: { layouts: [{ rows: 3, columns: 2, cardCount: 6 }] },
+      flow: { countdownMs: 10, firstTurnHintMs: 20, mismatchRevealMs: 30, roundTransitionMs: 40 },
+      scoring: { matchScore: 4, mismatchPenalty: 2 },
+    })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
+
+    session.dispatch({ type: 'begin' })
+    expect(session.getState().countdownMs).toBe(10)
+    session.dispatch({ type: 'tick', deltaMs: 10 })
+    expect(session.getState().firstTurnHintMs).toBe(20)
+    session.dispatch({ type: 'tick', deltaMs: 20 })
+
+    const [firstCard, matchingCard] = session.getState().board.filter(
+      (card, _, board) => card.character === board[0].character,
+    )
+    session.dispatch({ type: 'select-card', cardId: firstCard.id })
+    session.dispatch({ type: 'select-card', cardId: matchingCard.id })
+    expect(session.getState().score).toBe(4)
+
+    const mismatchFirst = session.getState().board.find((card) => card.status === 'hidden')!
+    const mismatchSecond = session.getState().board.find(
+      (card) => card.status === 'hidden' && card.character !== mismatchFirst.character,
+    )!
+    session.dispatch({ type: 'select-card', cardId: mismatchFirst.id })
+    session.dispatch({ type: 'select-card', cardId: mismatchSecond.id })
+    expect(session.getState().score).toBe(2)
+    expect(session.getState().pendingResolutionMs).toBe(30)
+  })
+
+  it('keeps zero-duration flow phases as separate ticks', () => {
+    const config = createGameConfig({ flow: { countdownMs: 0, firstTurnHintMs: 0 } })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
+
+    session.dispatch({ type: 'begin' })
+    expect(session.getState().phase).toBe('countdown')
+    session.dispatch({ type: 'tick', deltaMs: 0 })
+    expect(session.getState().phase).toBe('first-turn-hint')
+    session.dispatch({ type: 'tick', deltaMs: 0 })
+    expect(session.getState().phase).toBe('playing')
+  })
+
+  it('uses the configured Round transition duration', () => {
+    const config = createGameConfig({ flow: { roundTransitionMs: 40 } })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
+    startPlaying(session)
+
+    const characters = [...new Set(session.getState().board.map((card) => card.character))]
+    for (const character of characters) {
+      const pair = session.getState().board.filter((card) => card.character === character)
+      session.dispatch({ type: 'select-card', cardId: pair[0].id })
+      session.dispatch({ type: 'select-card', cardId: pair[1].id })
+    }
+
+    expect(session.getState().phase).toBe('transitioning-round')
+    expect(session.getState().transitionRemainingMs).toBe(40)
+    session.dispatch({ type: 'tick', deltaMs: 39 })
+    expect(session.getState().phase).toBe('transitioning-round')
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().round).toBe(2)
+  })
 })
 
 describe('Golden Card Event', () => {
+  it('honors a custom start Round, the inclusive schedule upper bound, and the exact time threshold', () => {
+    const config = createGameConfig({
+      rounds: { layouts: [{ rows: 2, columns: 2, cardCount: 4 }] },
+      goldenEvent: {
+        startRound: 2,
+        scheduleDelayMinMs: 11,
+        scheduleDelayMaxMs: 13,
+        minRemainingMs: 120_000,
+      },
+    })
+    const session = createConfiguredGameSession(config, { random: () => 0.999999 })
+    startPlaying(session)
+    completeCurrentBoard(session)
+
+    expect(session.getState().round).toBe(2)
+    expect(session.getState().remainingMs).toBe(120_000)
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(13)
+  })
+
+  it('uses independent Golden Timer, bonus, and penalty config fields', () => {
+    const config = createGameConfig({
+      goldenEvent: {
+        timerMs: 1_000,
+        successScoreBonus: 7,
+        successTimeBonusMs: 1_234,
+        failureTimePenaltyMs: 321,
+      },
+    })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
+    startGoldenEvent(session)
+
+    const beforeMatch = session.getState()
+    expect(beforeMatch.goldenTimerMs).toBe(1_000)
+    const goldenCard = beforeMatch.board.find((card) => card.id === beforeMatch.goldenCardId)!
+    const matchingCard = beforeMatch.board.find(
+      (card) => card.id !== goldenCard.id && card.character === goldenCard.character,
+    )!
+    session.dispatch({ type: 'select-card', cardId: goldenCard.id })
+    session.dispatch({ type: 'select-card', cardId: matchingCard.id })
+
+    expect(session.getState().score).toBe(beforeMatch.score + 17)
+    expect(session.getState().remainingMs).toBe(beforeMatch.remainingMs + 1_234)
+  })
+
   it('schedules once on Round 3 and starts after its active-play delay', () => {
     const session = createGameSession({ random: () => 0 })
     advanceToRoundThree(session)
@@ -560,7 +678,7 @@ describe('Golden Card Event', () => {
   })
 
   it('finishes without an extra Golden penalty when the main clock reaches zero first', () => {
-    const session = createGameSession({ durationMs: 30_000, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 30_000 } }), random: () => 0 })
     advanceToRoundThree(session)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     session.dispatch({ type: 'tick', deltaMs: 2500 })
@@ -573,7 +691,7 @@ describe('Golden Card Event', () => {
   })
 
   it('clamps the failure penalty when the Golden Timer expires near zero', () => {
-    const session = createGameSession({ durationMs: 30_000, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 30_000 } }), random: () => 0 })
     advanceToRoundThree(session)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     session.dispatch({ type: 'tick', deltaMs: 2500 })
@@ -585,7 +703,7 @@ describe('Golden Card Event', () => {
   })
 
   it('cancels the pending Golden Card Event if the Game Session reaches Round 3 too late', () => {
-    const session = createGameSession({ durationMs: 19_000, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 19_000 } }), random: () => 0 })
     advanceToRoundThree(session)
 
     expect(session.getState().round).toBe(3)

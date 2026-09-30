@@ -1,33 +1,10 @@
-export const GAME_DURATION_MS = 120_000
-export const FIRST_TURN_HINT_MS = 1_200
-export const GOLDEN_ALERT_MS = 2_500
-export const GOLDEN_TIMER_MS = 5_000
-export const GOLDEN_EVENT_MIN_REMAINING_MS = 20_000
-export const GOLDEN_EVENT_MIN_HIDDEN_PAIRS = 2
-export const ROUND_LAYOUTS = [
-  { rows: 2, columns: 2, cardCount: 4 },
-  { rows: 3, columns: 2, cardCount: 6 },
-  { rows: 4, columns: 2, cardCount: 8 },
-  { rows: 4, columns: 3, cardCount: 12 },
-  { rows: 4, columns: 4, cardCount: 16 },
-  { rows: 5, columns: 4, cardCount: 20 },
-] as const
+import { CAT_CHARACTER_IDS, type CatCharacterId } from './catCharacters'
+import { createGameConfig, type GameConfig, type RoundLayout } from './gameConfig'
 
-export const ROUND_CARD_COUNTS = [4, 6, 8, 12, 16, 20] as const
+export { CAT_CHARACTER_IDS, type CatCharacterId } from './catCharacters'
 
-export type BoardSize = (typeof ROUND_LAYOUTS)[number]['cardCount']
-export type BoardLayout = (typeof ROUND_LAYOUTS)[number]
-export type CatCharacterId =
-  | 'cat-1'
-  | 'cat-2'
-  | 'cat-3'
-  | 'cat-4'
-  | 'cat-5'
-  | 'cat-6'
-  | 'cat-7'
-  | 'cat-8'
-  | 'cat-9'
-  | 'cat-10'
+export type BoardSize = number
+export type BoardLayout = Readonly<RoundLayout>
 
 export type GamePhase =
   | 'ready'
@@ -105,29 +82,22 @@ export type GameAction =
   | { type: 'pause' }
   | { type: 'resume' }
 
-export type GameSessionOptions = {
-  durationMs?: number
+export type GameSessionRuntimeOptions = {
   random?: () => number
   highScore?: number
 }
 
+export type GameSessionOptions = GameSessionRuntimeOptions & {
+  config: GameConfig
+}
+
 export type GameSession = {
   getState: () => GameState
+  getConfig: () => GameConfig
   dispatch: (action: GameAction) => GameState
 }
 
-const CAT_CHARACTERS: CatCharacterId[] = [
-  'cat-1',
-  'cat-2',
-  'cat-3',
-  'cat-4',
-  'cat-5',
-  'cat-6',
-  'cat-7',
-  'cat-8',
-  'cat-9',
-  'cat-10',
-]
+const CAT_CHARACTERS: CatCharacterId[] = [...CAT_CHARACTER_IDS]
 
 function shuffle<T>(items: T[], random: () => number): T[] {
   const shuffled = [...items]
@@ -138,13 +108,13 @@ function shuffle<T>(items: T[], random: () => number): T[] {
   return shuffled
 }
 
-export function getBoardLayout(round: number): BoardLayout {
-  const roundIndex = Math.min(Math.max(Math.floor(round), 1) - 1, ROUND_LAYOUTS.length - 1)
-  return ROUND_LAYOUTS[roundIndex]
+export function getBoardLayout(round: number, config: GameConfig): BoardLayout {
+  const roundIndex = Math.min(Math.max(Math.floor(round), 1) - 1, config.rounds.layouts.length - 1)
+  return config.rounds.layouts[roundIndex]
 }
 
-function createBoard(round: number, random: () => number): Card[] {
-  const boardSize = getBoardLayout(round).cardCount
+function createBoard(round: number, config: GameConfig, random: () => number): Card[] {
+  const boardSize = getBoardLayout(round, config).cardCount
   const characterCount = boardSize / 2
   const characters = shuffle(CAT_CHARACTERS, random)
 
@@ -160,16 +130,17 @@ function randomIndex(length: number, random: () => number): number {
   return Math.min(length - 1, Math.max(0, Math.floor(random() * length)))
 }
 
-function getGoldenScheduleDelay(random: () => number): number {
-  return 3_000 + randomIndex(4_001, random)
+function getGoldenScheduleDelay(config: GameConfig, random: () => number): number {
+  const range = config.goldenEvent.scheduleDelayMaxMs - config.goldenEvent.scheduleDelayMinMs + 1
+  return config.goldenEvent.scheduleDelayMinMs + randomIndex(range, random)
 }
 
-function chooseGoldenCardId(board: Card[], random: () => number): string | null {
+function chooseGoldenCardId(board: Card[], config: GameConfig, random: () => number): string | null {
   const hiddenPairs = [...new Set(board.map((card) => card.character))]
     .map((character) => board.filter((card) => card.character === character && card.status === 'hidden'))
     .filter((pair) => pair.length === 2)
 
-  if (hiddenPairs.length < GOLDEN_EVENT_MIN_HIDDEN_PAIRS) return null
+  if (hiddenPairs.length < config.goldenEvent.minHiddenPairs) return null
   const pair = hiddenPairs[randomIndex(hiddenPairs.length, random)]
   return pair[randomIndex(pair.length, random)].id
 }
@@ -183,8 +154,21 @@ function finishState(state: GameState, remainingMs: number): GameState {
   }
 }
 
-export function createGameSession(options: GameSessionOptions = {}): GameSession {
-  const durationMs = options.durationMs ?? GAME_DURATION_MS
+function isGameConfig(value: GameConfig | GameSessionOptions): value is GameConfig {
+  return 'session' in value && 'rounds' in value && 'scoring' in value && 'flow' in value && 'goldenEvent' in value
+}
+
+export function createGameSession(options: GameSessionOptions): GameSession
+export function createGameSession(config: GameConfig, runtimeOptions?: GameSessionRuntimeOptions): GameSession
+export function createGameSession(
+  configOrOptions: GameConfig | GameSessionOptions,
+  runtimeOptions: GameSessionRuntimeOptions = {},
+): GameSession {
+  const configInput = isGameConfig(configOrOptions)
+    ? configOrOptions
+    : configOrOptions.config
+  const config = createGameConfig(configInput)
+  const options = isGameConfig(configOrOptions) ? runtimeOptions : configOrOptions
   const random = options.random ?? Math.random
   let state: GameState = {
     phase: 'ready',
@@ -192,7 +176,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
     round: 1,
     score: 0,
     highScore: options.highScore ?? 0,
-    remainingMs: durationMs,
+    remainingMs: config.session.durationMs,
     countdownMs: null,
     firstTurnHintMs: null,
     selectedCardIds: [],
@@ -210,21 +194,28 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
 
   return {
     getState: () => state,
+    getConfig: () => config,
     dispatch: (action) => {
       if (action.type === 'begin' && state.phase === 'ready') {
+        const shouldScheduleGolden = config.goldenEvent.startRound <= 1
+        const goldenEventStatus = shouldScheduleGolden
+          ? state.remainingMs < config.goldenEvent.minRemainingMs
+            ? 'cancelled'
+            : 'scheduled'
+          : 'unavailable'
         state = {
           ...state,
           phase: 'countdown',
-          board: createBoard(1, random),
-          countdownMs: 3_000,
+          board: createBoard(1, config, random),
+          countdownMs: config.flow.countdownMs,
           firstTurnHintMs: null,
           selectedCardIds: [],
           pendingResolutionMs: null,
           transitionRemainingMs: null,
           countdownTarget: 'first-turn-hint',
           pausedFrom: null,
-          goldenEventStatus: 'unavailable',
-          goldenScheduleMs: null,
+          goldenEventStatus,
+          goldenScheduleMs: goldenEventStatus === 'scheduled' ? getGoldenScheduleDelay(config, random) : null,
           goldenAlertMs: null,
           goldenTimerMs: null,
           goldenCardId: null,
@@ -240,7 +231,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
           ...state,
           phase,
           countdownMs: countdownMs === 0 ? null : countdownMs,
-          firstTurnHintMs: phase === 'first-turn-hint' ? FIRST_TURN_HINT_MS : state.firstTurnHintMs,
+          firstTurnHintMs: phase === 'first-turn-hint' ? config.flow.firstTurnHintMs : state.firstTurnHintMs,
           countdownTarget: countdownMs === 0 ? null : state.countdownTarget,
           pausedFrom: countdownMs === 0 ? null : state.pausedFrom,
         }
@@ -266,16 +257,16 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
         let goldenCardId = state.goldenCardId
         if (phase === 'playing' && goldenEventStatus === 'scheduled' && goldenScheduleMs !== null) {
           goldenScheduleMs = Math.max(0, goldenScheduleMs - action.deltaMs)
-          if (remainingMs < GOLDEN_EVENT_MIN_REMAINING_MS) {
+          if (remainingMs < config.goldenEvent.minRemainingMs) {
             goldenEventStatus = 'cancelled'
             goldenScheduleMs = null
           } else if (goldenScheduleMs === 0 && state.selectedCardIds.length === 0) {
-            goldenCardId = chooseGoldenCardId(state.board, random)
+            goldenCardId = chooseGoldenCardId(state.board, config, random)
             if (goldenCardId) {
               phase = 'golden-alert'
               goldenEventStatus = 'alert'
               goldenScheduleMs = null
-              goldenAlertMs = GOLDEN_ALERT_MS
+              goldenAlertMs = config.goldenEvent.alertMs
             } else {
               goldenEventStatus = 'scheduled'
               goldenScheduleMs = 0
@@ -302,7 +293,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
           phase: goldenAlertMs === 0 ? 'golden-playing' : 'golden-alert',
           goldenEventStatus: goldenAlertMs === 0 ? 'active' : 'alert',
           goldenAlertMs: goldenAlertMs === 0 ? null : goldenAlertMs,
-          goldenTimerMs: goldenAlertMs === 0 ? GOLDEN_TIMER_MS : state.goldenTimerMs,
+          goldenTimerMs: goldenAlertMs === 0 ? config.goldenEvent.timerMs : state.goldenTimerMs,
         }
         return state
       }
@@ -326,7 +317,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
             remainingMs,
           )
         } else if (goldenTimerMs === 0) {
-          const penalizedRemainingMs = Math.max(0, remainingMs - GOLDEN_TIMER_MS)
+          const penalizedRemainingMs = Math.max(0, remainingMs - config.goldenEvent.failureTimePenaltyMs)
           const failedState = {
             ...state,
             phase: penalizedRemainingMs === 0 ? ('finished' as const) : ('playing' as const),
@@ -411,9 +402,9 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
           state = { ...state, transitionRemainingMs }
         } else {
           const round = state.round + 1
-          const shouldScheduleGolden = round >= 3 && state.goldenEventStatus === 'unavailable'
+          const shouldScheduleGolden = round >= config.goldenEvent.startRound && state.goldenEventStatus === 'unavailable'
           const goldenEventStatus = shouldScheduleGolden
-            ? state.remainingMs < GOLDEN_EVENT_MIN_REMAINING_MS
+            ? state.remainingMs < config.goldenEvent.minRemainingMs
               ? 'cancelled'
               : 'scheduled'
             : state.goldenEventStatus
@@ -421,11 +412,11 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
             ...state,
             phase: 'playing',
             round,
-            board: createBoard(round, random),
+            board: createBoard(round, config, random),
             selectedCardIds: [],
             transitionRemainingMs: null,
             goldenEventStatus,
-            goldenScheduleMs: shouldScheduleGolden && goldenEventStatus === 'scheduled' ? getGoldenScheduleDelay(random) : state.goldenScheduleMs,
+            goldenScheduleMs: shouldScheduleGolden && goldenEventStatus === 'scheduled' ? getGoldenScheduleDelay(config, random) : state.goldenScheduleMs,
           }
         }
         return state
@@ -468,18 +459,18 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
             state = {
               ...state,
               board: resolvedBoard,
-              score: state.score + 15,
-              remainingMs: state.remainingMs + GOLDEN_TIMER_MS,
+              score: state.score + config.scoring.matchScore + config.goldenEvent.successScoreBonus,
+              remainingMs: state.remainingMs + config.goldenEvent.successTimeBonusMs,
               goldenEventStatus: 'completed',
               goldenTimerMs: null,
               goldenOutcome: 'success',
               selectedCardIds: [],
               phase: boardIsComplete ? 'transitioning-round' : 'playing',
               pendingResolutionMs: null,
-              transitionRemainingMs: boardIsComplete ? 800 : null,
+              transitionRemainingMs: boardIsComplete ? config.flow.roundTransitionMs : null,
             }
           } else if (isGoldenAttempt) {
-            const remainingMs = Math.max(0, state.remainingMs - GOLDEN_TIMER_MS)
+            const remainingMs = Math.max(0, state.remainingMs - config.goldenEvent.failureTimePenaltyMs)
             const failedState = {
               ...state,
               board: resolvedBoard,
@@ -489,7 +480,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
               goldenOutcome: 'failure' as const,
               selectedCardIds,
               phase: remainingMs === 0 ? ('finished' as const) : ('golden-resolving-mismatch' as const),
-              pendingResolutionMs: remainingMs === 0 ? null : 700,
+              pendingResolutionMs: remainingMs === 0 ? null : config.flow.mismatchRevealMs,
               transitionRemainingMs: null,
             }
             state = remainingMs === 0 ? finishState({ ...failedState, selectedCardIds: [] }, remainingMs) : failedState
@@ -497,11 +488,13 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
             state = {
               ...state,
               board: resolvedBoard,
-              score: isMatch ? state.score + 10 : Math.max(0, state.score - 1),
+              score: isMatch
+                ? state.score + config.scoring.matchScore
+                : Math.max(0, state.score - config.scoring.mismatchPenalty),
               selectedCardIds: isMatch ? [] : selectedCardIds,
               phase: boardIsComplete ? 'transitioning-round' : isMatch ? 'playing' : 'resolving-mismatch',
-              pendingResolutionMs: isMatch ? null : 700,
-              transitionRemainingMs: boardIsComplete ? 800 : null,
+              pendingResolutionMs: isMatch ? null : config.flow.mismatchRevealMs,
+              transitionRemainingMs: boardIsComplete ? config.flow.roundTransitionMs : null,
             }
           }
         }
@@ -525,7 +518,7 @@ export function createGameSession(options: GameSessionOptions = {}): GameSession
         state = {
           ...state,
           phase: 'countdown',
-          countdownMs: 3_000,
+          countdownMs: config.flow.countdownMs,
           firstTurnHintMs: null,
           countdownTarget,
         }
