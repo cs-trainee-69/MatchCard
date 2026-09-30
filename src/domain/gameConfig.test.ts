@@ -88,7 +88,7 @@ describe('Game Config validation', () => {
   it('rejects impossible layouts and Golden Card Event relationships', () => {
     invalid({ rounds: { layouts: [] } }, 'rounds.layouts')
     invalid({ rounds: { layouts: [{ rows: 2, columns: 2, cardCount: 3 }] } }, 'rounds.layouts[0].cardCount')
-    invalid({ rounds: { layouts: [{ rows: 2, columns: 2, cardCount: 6 }] } }, 'rounds.layouts[0]')
+    invalid({ rounds: { layouts: [{ rows: 2, columns: 2, cardCount: 6 }] } }, 'rounds.layouts[0].cardCount')
     invalid({ rounds: { layouts: [{ rows: 2, columns: 11, cardCount: 22 }] } }, 'rounds.layouts[0].cardCount')
     invalid({ goldenEvent: { scheduleDelayMinMs: 8_000, scheduleDelayMaxMs: 7_000 } }, 'goldenEvent.scheduleDelayMinMs')
     invalid({ goldenEvent: { startRound: 0 } }, 'goldenEvent.startRound')

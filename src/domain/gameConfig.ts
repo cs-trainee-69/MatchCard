@@ -134,7 +134,7 @@ function validateConfig(config: GameConfigShape): void {
     validateNonnegativeInteger(layout.columns, `${path}.columns`, { positive: true })
     validateNonnegativeInteger(layout.cardCount, `${path}.cardCount`, { positive: true })
     if (layout.cardCount % 2 !== 0) fail(`${path}.cardCount`, 'must be even')
-    if (layout.rows * layout.columns !== layout.cardCount) fail(path, 'rows * columns must equal cardCount')
+    if (layout.rows * layout.columns !== layout.cardCount) fail(`${path}.cardCount`, 'rows * columns must equal cardCount')
     if (layout.cardCount / 2 > CAT_CHARACTER_IDS.length) {
       fail(`${path}.cardCount`, `requires more than ${CAT_CHARACTER_IDS.length} Cat Characters`)
     }
