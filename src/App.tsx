@@ -2,17 +2,18 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import {
   type Card,
   createGameSession,
-  GOLDEN_TIMER_MS,
   getBoardLayout,
   isClockRunningPhase,
   type GameAction,
   type GameSession,
   type GameState,
 } from './domain/gameSession'
+import { createGameConfig, formatRuleDurationMs, type GameConfig } from './domain/gameConfig'
+import type { CatCharacterId } from './domain/catCharacters'
 import { playSound } from './audio'
 import { loadHighScore, loadSoundEnabled, saveHighScore, saveSoundEnabled } from './storage'
 
-const CHARACTER_LABELS: Record<Card['character'], string> = {
+const CHARACTER_LABELS: Record<CatCharacterId, string> = {
   'cat-1': 'Cat 1',
   'cat-2': 'Cat 2',
   'cat-3': 'Cat 3',
@@ -25,7 +26,7 @@ const CHARACTER_LABELS: Record<Card['character'], string> = {
   'cat-10': 'Cat 10',
 }
 
-const CHARACTER_IMAGES: Record<Card['character'], string> = {
+const CHARACTER_IMAGES: Record<CatCharacterId, string> = {
   'cat-1': '/card/cat/cat-1.png',
   'cat-2': '/card/cat/cat-2.png',
   'cat-3': '/card/cat/cat-3.png',
@@ -211,8 +212,8 @@ function FeedbackToast({ feedback }: { feedback: Feedback }) {
   )
 }
 
-function GoldenTimer({ remainingMs }: { remainingMs: number }) {
-  const progress = Math.max(0, Math.min(100, remainingMs / GOLDEN_TIMER_MS * 100))
+function GoldenTimer({ remainingMs, durationMs }: { remainingMs: number; durationMs: number }) {
+  const progress = Math.max(0, Math.min(100, remainingMs / durationMs * 100))
   const level = remainingMs <= 1_000 ? 'critical' : remainingMs <= 2_000 ? 'warning' : 'normal'
 
   return (
@@ -320,14 +321,14 @@ function FirstTurnHintOverlay() {
   )
 }
 
-function GoldenAlertOverlay() {
+function GoldenAlertOverlay({ timerMs }: { timerMs: number }) {
   return (
     <div className="overlay overlay-golden-alert" data-testid="golden-alert" role="alert" aria-live="assertive">
       <div className="overlay-card golden-alert-card">
         <img className="golden-alert-cat" src="/card/cat/golden-cat.png" alt="" aria-hidden="true" />
         <p className="eyebrow">GOLDEN CAT!</p>
         <h2>Special card</h2>
-        <p className="golden-alert-instruction" lang="th">เปิดแมวทอง แล้วหาคู่ให้ทันใน 5 วินาที!</p>
+        <p className="golden-alert-instruction" lang="th">เปิดแมวทอง แล้วหาคู่ให้ทันใน {formatRuleDurationMs(timerMs).replace(' seconds', ' วินาที')}!</p>
       </div>
     </div>
   )
@@ -395,9 +396,13 @@ function ResultOverlay({ state, isNewHighScore, onReplay }: { state: GameState; 
   )
 }
 
-export default function App() {
+export default function App({ config: requestedConfig }: { config?: GameConfig } = {}) {
   const [startingHighScore, setStartingHighScore] = useState(loadHighScore)
-  const [session, setSession] = useState<GameSession>(() => createGameSession({ highScore: startingHighScore }))
+  const [session, setSession] = useState<GameSession>(() => createGameSession({
+    config: requestedConfig ?? createGameConfig(),
+    highScore: startingHighScore,
+  }))
+  const activeConfig = session.getConfig()
   const [state, setState] = useState<GameState>(() => session.getState())
   const [soundEnabled, setSoundEnabled] = useState(loadSoundEnabled)
   const [feedback, setFeedback] = useState<Feedback>(null)
@@ -492,19 +497,27 @@ export default function App() {
     if (goldenOutcomeChanged) {
       feedbackId.current += 1
       if (state.goldenOutcome === 'success') {
-        setFeedback({ kind: 'golden-match', scoreDeltaLabel: '+15 SCORE • +5s', id: feedbackId.current })
+        setFeedback({
+          kind: 'golden-match',
+          scoreDeltaLabel: `+${activeConfig.scoring.matchScore + activeConfig.goldenEvent.successScoreBonus} SCORE • +${formatRuleDurationMs(activeConfig.goldenEvent.successTimeBonusMs).replace(' seconds', 's')}`,
+          id: feedbackId.current,
+        })
         playSound('golden-match', soundEnabled)
       } else {
-        setFeedback({ kind: 'golden-missed', scoreDeltaLabel: '-5s', id: feedbackId.current })
+        setFeedback({
+          kind: 'golden-missed',
+          scoreDeltaLabel: `-${formatRuleDurationMs(activeConfig.goldenEvent.failureTimePenaltyMs).replace(' seconds', 's')}`,
+          id: feedbackId.current,
+        })
         playSound('golden-missed', soundEnabled)
       }
-    } else if (state.score > previous.score) {
+    } else if (newlyMatchedCards.length >= 2) {
       feedbackId.current += 1
-      setFeedback({ kind: 'match', scoreDeltaLabel: '+10', id: feedbackId.current })
+      setFeedback({ kind: 'match', scoreDeltaLabel: `+${activeConfig.scoring.matchScore}`, id: feedbackId.current })
       playSound('match', soundEnabled)
     } else if (state.phase === 'resolving-mismatch' && previous.phase !== 'resolving-mismatch') {
       feedbackId.current += 1
-      setFeedback({ kind: 'mismatch', scoreDeltaLabel: '−1', id: feedbackId.current })
+      setFeedback({ kind: 'mismatch', scoreDeltaLabel: `−${activeConfig.scoring.mismatchPenalty}`, id: feedbackId.current })
       playSound('mismatch', soundEnabled)
     }
 
@@ -528,7 +541,7 @@ export default function App() {
 
     if (state.phase === 'finished' && previous.phase !== 'finished') playSound('finish', soundEnabled)
     previousState.current = state
-  }, [state, soundEnabled])
+  }, [activeConfig, state, soundEnabled])
 
   useEffect(() => {
     if (state.phase !== 'paused' && state.phase !== 'finished') return
@@ -575,7 +588,10 @@ export default function App() {
   }
 
   const handleReplay = () => {
-    const nextSession = createGameSession({ highScore: state.highScore })
+    const nextSession = createGameSession({
+      config: requestedConfig ?? createGameConfig(),
+      highScore: state.highScore,
+    })
     setStartingHighScore(state.highScore)
     setSession(nextSession)
     setState(nextSession.getState())
@@ -583,7 +599,7 @@ export default function App() {
     setMatchEffect(null)
   }
 
-  const boardLayout = getBoardLayout(state.round)
+  const boardLayout = getBoardLayout(state.round, activeConfig)
   const cardsDisabled = state.phase !== 'playing' && state.phase !== 'golden-playing'
   const goldenSelectionLocked = state.phase === 'golden-playing' && state.selectedCardIds.length === 0
 
@@ -598,7 +614,7 @@ export default function App() {
             scoreRef={(element) => { scoreRef.current = element }}
             timeRef={(element) => { timeRef.current = element }}
           />
-          {state.goldenTimerMs !== null && <GoldenTimer remainingMs={state.goldenTimerMs} />}
+          {state.goldenTimerMs !== null && <GoldenTimer remainingMs={state.goldenTimerMs} durationMs={activeConfig.goldenEvent.timerMs} />}
           <div className="board-wrap">
             {state.board.length > 0 && (
               <div
@@ -643,7 +659,7 @@ export default function App() {
           {state.phase === 'ready' && <StartOverlay onStart={handleStart} />}
           {state.phase === 'countdown' && <CountdownOverlay countdownMs={state.countdownMs} />}
           {state.phase === 'first-turn-hint' && <FirstTurnHintOverlay />}
-          {state.phase === 'golden-alert' && <GoldenAlertOverlay />}
+          {state.phase === 'golden-alert' && <GoldenAlertOverlay timerMs={activeConfig.goldenEvent.timerMs} />}
           {state.phase === 'paused' && <PauseOverlay onResume={() => dispatch({ type: 'resume' })} />}
           {matchEffect && <MatchEffectLayer effect={matchEffect} reducedMotion={prefersReducedMotion} />}
           {state.remainingMs <= 10_000 && state.remainingMs > 0 && state.phase !== 'ready' && (
