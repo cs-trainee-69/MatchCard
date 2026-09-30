@@ -292,16 +292,13 @@ function RoundCelebration({ state }: { state: GameState }) {
 function StartOverlay({ onStart }: { onStart: () => void }) {
   return (
     <div className="overlay overlay-start">
-      <div className="start-intro">
-        <img className="start-cat" src={CELEBRATION_IMAGE} alt="" aria-hidden="true" />
-        <div className="start-intro-copy">
-          <p className="eyebrow">Cat Card</p>
-          <p className="start-subtitle" lang="th">จับคู่แมวให้ครบก่อนเวลาหมด</p>
-          <button className="start-prompt" type="button" lang="th" onClick={onStart}>
-            <span className="start-button-paw" aria-hidden="true"><PawIcon className="paw-icon" /></span>
-            <span>แตะเพื่อเริ่ม</span>
-          </button>
-        </div>
+      <img className="start-cat" src={CELEBRATION_IMAGE} alt="" aria-hidden="true" />
+      <div className="start-floating-copy">
+        <p className="eyebrow">Cat Card</p>
+        <p className="start-subtitle" lang="th">จับคู่แมวให้ครบก่อนเวลาหมด</p>
+        <button className="start-prompt" type="button" lang="th" onClick={onStart}>
+          แตะเพื่อเริ่ม
+        </button>
       </div>
     </div>
   )
