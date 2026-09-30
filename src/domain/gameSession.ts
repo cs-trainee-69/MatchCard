@@ -4,7 +4,7 @@ import { createGameConfig, type GameConfig, type RoundLayout } from './gameConfi
 export { CAT_CHARACTER_IDS, type CatCharacterId } from './catCharacters'
 
 export type BoardSize = number
-export type BoardLayout = RoundLayout
+export type BoardLayout = Readonly<RoundLayout>
 
 export type GamePhase =
   | 'ready'
