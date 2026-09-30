@@ -1,0 +1,537 @@
+export const GAME_DURATION_MS = 120_000
+export const FIRST_TURN_HINT_MS = 1_200
+export const GOLDEN_ALERT_MS = 2_500
+export const GOLDEN_TIMER_MS = 5_000
+export const GOLDEN_EVENT_MIN_REMAINING_MS = 20_000
+export const GOLDEN_EVENT_MIN_HIDDEN_PAIRS = 2
+export const ROUND_LAYOUTS = [
+  { rows: 2, columns: 2, cardCount: 4 },
+  { rows: 3, columns: 2, cardCount: 6 },
+  { rows: 4, columns: 2, cardCount: 8 },
+  { rows: 4, columns: 3, cardCount: 12 },
+  { rows: 4, columns: 4, cardCount: 16 },
+  { rows: 5, columns: 4, cardCount: 20 },
+] as const
+
+export const ROUND_CARD_COUNTS = [4, 6, 8, 12, 16, 20] as const
+
+export type BoardSize = (typeof ROUND_LAYOUTS)[number]['cardCount']
+export type BoardLayout = (typeof ROUND_LAYOUTS)[number]
+export type CatCharacterId =
+  | 'cat-1'
+  | 'cat-2'
+  | 'cat-3'
+  | 'cat-4'
+  | 'cat-5'
+  | 'cat-6'
+  | 'cat-7'
+  | 'cat-8'
+  | 'cat-9'
+  | 'cat-10'
+
+export type GamePhase =
+  | 'ready'
+  | 'countdown'
+  | 'first-turn-hint'
+  | 'playing'
+  | 'golden-alert'
+  | 'golden-playing'
+  | 'golden-resolving-mismatch'
+  | 'resolving-mismatch'
+  | 'transitioning-round'
+  | 'paused'
+  | 'finished'
+
+type ResumablePhase =
+  | 'first-turn-hint'
+  | 'playing'
+  | 'golden-alert'
+  | 'golden-playing'
+  | 'golden-resolving-mismatch'
+  | 'resolving-mismatch'
+  | 'transitioning-round'
+type PausablePhase = ResumablePhase | 'countdown'
+
+const CLOCK_RUNNING_PHASES: readonly GamePhase[] = [
+  'countdown',
+  'first-turn-hint',
+  'playing',
+  'golden-alert',
+  'golden-playing',
+  'golden-resolving-mismatch',
+  'resolving-mismatch',
+  'transitioning-round',
+]
+
+export function isClockRunningPhase(phase: GamePhase): phase is PausablePhase {
+  return CLOCK_RUNNING_PHASES.includes(phase)
+}
+
+export type Card = {
+  id: string
+  character: CatCharacterId
+  status: 'hidden' | 'revealed' | 'matched'
+}
+
+export type GoldenEventStatus = 'unavailable' | 'scheduled' | 'alert' | 'active' | 'completed' | 'cancelled'
+export type GoldenOutcome = 'success' | 'failure' | null
+
+export type GameState = {
+  phase: GamePhase
+  board: Card[]
+  round: number
+  score: number
+  highScore: number
+  remainingMs: number
+  countdownMs: number | null
+  firstTurnHintMs: number | null
+  selectedCardIds: string[]
+  pendingResolutionMs: number | null
+  transitionRemainingMs: number | null
+  countdownTarget: ResumablePhase | null
+  pausedFrom: PausablePhase | null
+  goldenEventStatus: GoldenEventStatus
+  goldenScheduleMs: number | null
+  goldenAlertMs: number | null
+  goldenTimerMs: number | null
+  goldenCardId: string | null
+  goldenOutcome: GoldenOutcome
+}
+
+export type GameAction =
+  | { type: 'begin' }
+  | { type: 'tick'; deltaMs: number }
+  | { type: 'select-card'; cardId: string }
+  | { type: 'pause' }
+  | { type: 'resume' }
+
+export type GameSessionOptions = {
+  durationMs?: number
+  random?: () => number
+  highScore?: number
+}
+
+export type GameSession = {
+  getState: () => GameState
+  dispatch: (action: GameAction) => GameState
+}
+
+const CAT_CHARACTERS: CatCharacterId[] = [
+  'cat-1',
+  'cat-2',
+  'cat-3',
+  'cat-4',
+  'cat-5',
+  'cat-6',
+  'cat-7',
+  'cat-8',
+  'cat-9',
+  'cat-10',
+]
+
+function shuffle<T>(items: T[], random: () => number): T[] {
+  const shuffled = [...items]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1))
+    ;[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]]
+  }
+  return shuffled
+}
+
+export function getBoardLayout(round: number): BoardLayout {
+  const roundIndex = Math.min(Math.max(Math.floor(round), 1) - 1, ROUND_LAYOUTS.length - 1)
+  return ROUND_LAYOUTS[roundIndex]
+}
+
+function createBoard(round: number, random: () => number): Card[] {
+  const boardSize = getBoardLayout(round).cardCount
+  const characterCount = boardSize / 2
+  const characters = shuffle(CAT_CHARACTERS, random)
+
+  const cards = characters.slice(0, characterCount).flatMap((character, characterIndex) => [
+    { id: `${round}-${characterIndex}-a`, character, status: 'hidden' as const },
+    { id: `${round}-${characterIndex}-b`, character, status: 'hidden' as const },
+  ])
+
+  return shuffle(cards, random)
+}
+
+function randomIndex(length: number, random: () => number): number {
+  return Math.min(length - 1, Math.max(0, Math.floor(random() * length)))
+}
+
+function getGoldenScheduleDelay(random: () => number): number {
+  return 3_000 + randomIndex(4_001, random)
+}
+
+function chooseGoldenCardId(board: Card[], random: () => number): string | null {
+  const hiddenPairs = [...new Set(board.map((card) => card.character))]
+    .map((character) => board.filter((card) => card.character === character && card.status === 'hidden'))
+    .filter((pair) => pair.length === 2)
+
+  if (hiddenPairs.length < GOLDEN_EVENT_MIN_HIDDEN_PAIRS) return null
+  const pair = hiddenPairs[randomIndex(hiddenPairs.length, random)]
+  return pair[randomIndex(pair.length, random)].id
+}
+
+function finishState(state: GameState, remainingMs: number): GameState {
+  return {
+    ...state,
+    phase: 'finished',
+    remainingMs,
+    highScore: Math.max(state.highScore, state.score),
+  }
+}
+
+export function createGameSession(options: GameSessionOptions = {}): GameSession {
+  const durationMs = options.durationMs ?? GAME_DURATION_MS
+  const random = options.random ?? Math.random
+  let state: GameState = {
+    phase: 'ready',
+    board: [],
+    round: 1,
+    score: 0,
+    highScore: options.highScore ?? 0,
+    remainingMs: durationMs,
+    countdownMs: null,
+    firstTurnHintMs: null,
+    selectedCardIds: [],
+    pendingResolutionMs: null,
+    transitionRemainingMs: null,
+    countdownTarget: null,
+    pausedFrom: null,
+    goldenEventStatus: 'unavailable',
+    goldenScheduleMs: null,
+    goldenAlertMs: null,
+    goldenTimerMs: null,
+    goldenCardId: null,
+    goldenOutcome: null,
+  }
+
+  return {
+    getState: () => state,
+    dispatch: (action) => {
+      if (action.type === 'begin' && state.phase === 'ready') {
+        state = {
+          ...state,
+          phase: 'countdown',
+          board: createBoard(1, random),
+          countdownMs: 3_000,
+          firstTurnHintMs: null,
+          selectedCardIds: [],
+          pendingResolutionMs: null,
+          transitionRemainingMs: null,
+          countdownTarget: 'first-turn-hint',
+          pausedFrom: null,
+          goldenEventStatus: 'unavailable',
+          goldenScheduleMs: null,
+          goldenAlertMs: null,
+          goldenTimerMs: null,
+          goldenCardId: null,
+          goldenOutcome: null,
+        }
+      }
+
+      if (action.type === 'tick' && state.phase === 'countdown') {
+        const countdownMs = Math.max(0, state.countdownMs! - action.deltaMs)
+        const countdownTarget = state.countdownTarget!
+        const phase = countdownMs === 0 ? countdownTarget : 'countdown'
+        state = {
+          ...state,
+          phase,
+          countdownMs: countdownMs === 0 ? null : countdownMs,
+          firstTurnHintMs: phase === 'first-turn-hint' ? FIRST_TURN_HINT_MS : state.firstTurnHintMs,
+          countdownTarget: countdownMs === 0 ? null : state.countdownTarget,
+          pausedFrom: countdownMs === 0 ? null : state.pausedFrom,
+        }
+        return state
+      }
+
+      if (action.type === 'tick' && state.phase === 'first-turn-hint') {
+        const firstTurnHintMs = Math.max(0, state.firstTurnHintMs! - action.deltaMs)
+        state = {
+          ...state,
+          phase: firstTurnHintMs === 0 ? 'playing' : 'first-turn-hint',
+          firstTurnHintMs: firstTurnHintMs === 0 ? null : firstTurnHintMs,
+        }
+        return state
+      }
+
+      if (action.type === 'tick' && state.phase === 'playing') {
+        const remainingMs = Math.max(0, state.remainingMs - action.deltaMs)
+        let phase: GamePhase = remainingMs === 0 ? 'finished' : 'playing'
+        let goldenEventStatus = state.goldenEventStatus
+        let goldenScheduleMs = state.goldenScheduleMs
+        let goldenAlertMs = state.goldenAlertMs
+        let goldenCardId = state.goldenCardId
+        if (phase === 'playing' && goldenEventStatus === 'scheduled' && goldenScheduleMs !== null) {
+          goldenScheduleMs = Math.max(0, goldenScheduleMs - action.deltaMs)
+          if (remainingMs < GOLDEN_EVENT_MIN_REMAINING_MS) {
+            goldenEventStatus = 'cancelled'
+            goldenScheduleMs = null
+          } else if (goldenScheduleMs === 0 && state.selectedCardIds.length === 0) {
+            goldenCardId = chooseGoldenCardId(state.board, random)
+            if (goldenCardId) {
+              phase = 'golden-alert'
+              goldenEventStatus = 'alert'
+              goldenScheduleMs = null
+              goldenAlertMs = GOLDEN_ALERT_MS
+            } else {
+              goldenEventStatus = 'scheduled'
+              goldenScheduleMs = 0
+            }
+          }
+        }
+        state = {
+          ...state,
+          phase,
+          remainingMs,
+          goldenEventStatus,
+          goldenScheduleMs,
+          goldenAlertMs,
+          goldenCardId,
+          highScore: phase === 'finished' ? Math.max(state.highScore, state.score) : state.highScore,
+        }
+        return state
+      }
+
+      if (action.type === 'tick' && state.phase === 'golden-alert') {
+        const goldenAlertMs = Math.max(0, state.goldenAlertMs! - action.deltaMs)
+        state = {
+          ...state,
+          phase: goldenAlertMs === 0 ? 'golden-playing' : 'golden-alert',
+          goldenEventStatus: goldenAlertMs === 0 ? 'active' : 'alert',
+          goldenAlertMs: goldenAlertMs === 0 ? null : goldenAlertMs,
+          goldenTimerMs: goldenAlertMs === 0 ? GOLDEN_TIMER_MS : state.goldenTimerMs,
+        }
+        return state
+      }
+
+      if (action.type === 'tick' && state.phase === 'golden-playing') {
+        const remainingMs = Math.max(0, state.remainingMs - action.deltaMs)
+        const goldenTimerMs = Math.max(0, state.goldenTimerMs! - action.deltaMs)
+
+        if (remainingMs === 0) {
+          state = finishState(
+            {
+              ...state,
+              goldenEventStatus: 'cancelled',
+              goldenTimerMs: null,
+              goldenCardId: null,
+              selectedCardIds: [],
+              board: state.board.map((card) =>
+                state.selectedCardIds.includes(card.id) ? { ...card, status: 'hidden' as const } : card,
+              ),
+            },
+            remainingMs,
+          )
+        } else if (goldenTimerMs === 0) {
+          const penalizedRemainingMs = Math.max(0, remainingMs - GOLDEN_TIMER_MS)
+          const failedState = {
+            ...state,
+            phase: penalizedRemainingMs === 0 ? ('finished' as const) : ('playing' as const),
+            remainingMs: penalizedRemainingMs,
+            goldenEventStatus: 'completed' as const,
+            goldenTimerMs: null,
+            goldenCardId: state.goldenCardId,
+            goldenOutcome: 'failure' as const,
+            selectedCardIds: [],
+            board: state.board.map((card) =>
+              state.selectedCardIds.includes(card.id) ? { ...card, status: 'hidden' as const } : card,
+            ),
+          }
+          state = failedState.phase === 'finished' ? finishState(failedState, penalizedRemainingMs) : failedState
+        } else {
+          state = { ...state, remainingMs, goldenTimerMs }
+        }
+        return state
+      }
+
+      if (action.type === 'tick' && state.phase === 'resolving-mismatch') {
+        const pendingResolutionMs = Math.max(0, state.pendingResolutionMs! - action.deltaMs)
+        const remainingMs = Math.max(0, state.remainingMs - action.deltaMs)
+        if (pendingResolutionMs > 0) {
+          state = { ...state, pendingResolutionMs, remainingMs }
+        } else {
+          const selectedCardIds = new Set(state.selectedCardIds)
+          const phase = remainingMs === 0 ? 'finished' : 'playing'
+          state = {
+            ...state,
+            phase,
+            board: state.board.map((card) =>
+              selectedCardIds.has(card.id) ? { ...card, status: 'hidden' as const } : card,
+            ),
+            selectedCardIds: [],
+            pendingResolutionMs: null,
+            remainingMs,
+            highScore: phase === 'finished' ? Math.max(state.highScore, state.score) : state.highScore,
+          }
+        }
+        return state
+      }
+
+      if (action.type === 'tick' && state.phase === 'golden-resolving-mismatch') {
+        const pendingResolutionMs = Math.max(0, state.pendingResolutionMs! - action.deltaMs)
+        const remainingMs = Math.max(0, state.remainingMs - action.deltaMs)
+        const selectedCardIds = new Set(state.selectedCardIds)
+        if (remainingMs === 0) {
+          state = finishState(
+            {
+              ...state,
+              board: state.board.map((card) =>
+                selectedCardIds.has(card.id) ? { ...card, status: 'hidden' as const } : card,
+              ),
+              selectedCardIds: [],
+              pendingResolutionMs: null,
+              goldenTimerMs: null,
+            },
+            remainingMs,
+          )
+        } else if (pendingResolutionMs > 0) {
+          state = { ...state, pendingResolutionMs, remainingMs }
+        } else {
+          state = {
+            ...state,
+            phase: 'playing',
+            board: state.board.map((card) =>
+              selectedCardIds.has(card.id) ? { ...card, status: 'hidden' as const } : card,
+            ),
+            selectedCardIds: [],
+            pendingResolutionMs: null,
+            remainingMs,
+            goldenTimerMs: null,
+          }
+        }
+        return state
+      }
+
+      if (action.type === 'tick' && state.phase === 'transitioning-round') {
+        const transitionRemainingMs = Math.max(0, state.transitionRemainingMs! - action.deltaMs)
+        if (transitionRemainingMs > 0) {
+          state = { ...state, transitionRemainingMs }
+        } else {
+          const round = state.round + 1
+          const shouldScheduleGolden = round >= 3 && state.goldenEventStatus === 'unavailable'
+          const goldenEventStatus = shouldScheduleGolden
+            ? state.remainingMs < GOLDEN_EVENT_MIN_REMAINING_MS
+              ? 'cancelled'
+              : 'scheduled'
+            : state.goldenEventStatus
+          state = {
+            ...state,
+            phase: 'playing',
+            round,
+            board: createBoard(round, random),
+            selectedCardIds: [],
+            transitionRemainingMs: null,
+            goldenEventStatus,
+            goldenScheduleMs: shouldScheduleGolden && goldenEventStatus === 'scheduled' ? getGoldenScheduleDelay(random) : state.goldenScheduleMs,
+          }
+        }
+        return state
+      }
+
+      if (action.type === 'select-card' && (state.phase === 'playing' || state.phase === 'golden-playing')) {
+        const selectedCard = state.board.find((card) => card.id === action.cardId)
+        if (!selectedCard || selectedCard.status !== 'hidden') {
+          return state
+        }
+
+        const isGoldenPlaying = state.phase === 'golden-playing' && state.goldenEventStatus === 'active'
+        if (isGoldenPlaying && state.selectedCardIds.length === 0 && action.cardId !== state.goldenCardId) {
+          return state
+        }
+
+        const boardWithSelection = state.board.map((card) =>
+          card.id === action.cardId ? { ...card, status: 'revealed' as const } : card,
+        )
+
+        if (state.selectedCardIds.length === 0) {
+          state = {
+            ...state,
+            board: boardWithSelection,
+            selectedCardIds: [action.cardId],
+          }
+        } else {
+          const firstCard = state.board.find((card) => card.id === state.selectedCardIds[0])!
+          const isMatch = firstCard.character === selectedCard.character
+          const selectedCardIds = [...state.selectedCardIds, action.cardId]
+          const resolvedBoard = isMatch
+            ? boardWithSelection.map((card) =>
+                selectedCardIds.includes(card.id) ? { ...card, status: 'matched' as const } : card,
+              )
+            : boardWithSelection
+          const boardIsComplete = isMatch && resolvedBoard.every((card) => card.status === 'matched')
+
+          const isGoldenAttempt = isGoldenPlaying && state.selectedCardIds[0] === state.goldenCardId
+          if (isGoldenAttempt && isMatch) {
+            state = {
+              ...state,
+              board: resolvedBoard,
+              score: state.score + 15,
+              remainingMs: state.remainingMs + GOLDEN_TIMER_MS,
+              goldenEventStatus: 'completed',
+              goldenTimerMs: null,
+              goldenOutcome: 'success',
+              selectedCardIds: [],
+              phase: boardIsComplete ? 'transitioning-round' : 'playing',
+              pendingResolutionMs: null,
+              transitionRemainingMs: boardIsComplete ? 800 : null,
+            }
+          } else if (isGoldenAttempt) {
+            const remainingMs = Math.max(0, state.remainingMs - GOLDEN_TIMER_MS)
+            const failedState = {
+              ...state,
+              board: resolvedBoard,
+              remainingMs,
+              goldenEventStatus: 'completed' as const,
+              goldenTimerMs: null,
+              goldenOutcome: 'failure' as const,
+              selectedCardIds,
+              phase: remainingMs === 0 ? ('finished' as const) : ('golden-resolving-mismatch' as const),
+              pendingResolutionMs: remainingMs === 0 ? null : 700,
+              transitionRemainingMs: null,
+            }
+            state = remainingMs === 0 ? finishState({ ...failedState, selectedCardIds: [] }, remainingMs) : failedState
+          } else {
+            state = {
+              ...state,
+              board: resolvedBoard,
+              score: isMatch ? state.score + 10 : Math.max(0, state.score - 1),
+              selectedCardIds: isMatch ? [] : selectedCardIds,
+              phase: boardIsComplete ? 'transitioning-round' : isMatch ? 'playing' : 'resolving-mismatch',
+              pendingResolutionMs: isMatch ? null : 700,
+              transitionRemainingMs: boardIsComplete ? 800 : null,
+            }
+          }
+        }
+      }
+
+      if (action.type === 'pause' && isClockRunningPhase(state.phase)) {
+        state = {
+          ...state,
+          phase: 'paused',
+          pausedFrom: state.phase,
+        }
+      }
+
+      if (action.type === 'resume' && state.phase === 'paused' && state.pausedFrom) {
+        const countdownTarget =
+          state.pausedFrom === 'countdown'
+            ? state.countdownTarget ?? 'playing'
+            : state.pausedFrom === 'first-turn-hint'
+              ? 'playing'
+              : state.pausedFrom
+        state = {
+          ...state,
+          phase: 'countdown',
+          countdownMs: 3_000,
+          firstTurnHintMs: null,
+          countdownTarget,
+        }
+      }
+
+      return state
+    },
+  }
+}
