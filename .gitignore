@@ -3,5 +3,6 @@ dist/
 test-results/
 playwright-report/
 .pnpm-store/
-pnpm-workspace.yaml
 *.tsbuildinfo
+.env*
+!.env.example

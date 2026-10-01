@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "perf:measure": "node scripts/measure-performance.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.4",
