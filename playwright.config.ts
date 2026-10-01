@@ -1,4 +1,12 @@
 import { defineConfig, devices } from '@playwright/test'
+import { loadEnv } from 'vite'
+import { resolvePort } from './config/ports.mjs'
+
+const fileEnv = loadEnv('test', process.cwd(), '')
+const e2ePort = resolvePort(process.env.E2E_PORT, fileEnv.E2E_PORT, 'E2E_PORT', 4173)
+const configuredBaseUrl = process.env.E2E_BASE_URL ?? fileEnv.E2E_BASE_URL
+const externalBaseUrl = configuredBaseUrl?.trim() || undefined
+const localBaseUrl = `http://127.0.0.1:${e2ePort}`
 
 export default defineConfig({
   testDir: './e2e',
@@ -7,7 +15,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: externalBaseUrl ?? localBaseUrl,
     trace: 'on-first-retry',
   },
   projects: [
@@ -16,9 +24,13 @@ export default defineConfig({
       use: { ...devices['Pixel 5'] },
     },
   ],
-  webServer: {
-    command: 'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 4173',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: !process.env.CI,
-  },
+  ...(externalBaseUrl
+    ? {}
+    : {
+        webServer: {
+          command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${e2ePort} --strictPort`,
+          url: localBaseUrl,
+          reuseExistingServer: !process.env.CI,
+        },
+      }),
 })

@@ -1,20 +1,52 @@
 import { describe, expect, it } from 'vitest'
-import { createGameSession, getBoardLayout, type GameSession } from './gameSession'
+import { createGameSession as createConfiguredGameSession, getBoardLayout, type GameSession } from './gameSession'
+import { createGameConfig, type GameConfig } from './gameConfig'
+
+const DEFAULT_TEST_CONFIG = createGameConfig()
+
+function createGameSession(options: { config?: GameConfig; durationMs?: number; random?: () => number; highScore?: number } = {}) {
+  const config = options.config ?? (options.durationMs === undefined
+    ? DEFAULT_TEST_CONFIG
+    : createGameConfig({ session: { durationMs: options.durationMs } }))
+  return createConfiguredGameSession({ config, random: options.random, highScore: options.highScore })
+}
 
 function startPlaying(session: GameSession) {
   session.dispatch({ type: 'begin' })
   session.dispatch({ type: 'tick', deltaMs: 3000 })
-  session.dispatch({ type: 'tick', deltaMs: 1200 })
+  session.dispatch({ type: 'tick', deltaMs: 2000 })
+}
+
+function completeCurrentBoard(session: GameSession) {
+  const characters = [...new Set(session.getState().board.map((card) => card.character))]
+  for (const character of characters) {
+    const pair = session.getState().board.filter((card) => card.character === character)
+    session.dispatch({ type: 'select-card', cardId: pair[0].id })
+    session.dispatch({ type: 'select-card', cardId: pair[1].id })
+  }
+  session.dispatch({ type: 'tick', deltaMs: 800 })
+}
+
+function advanceToRoundThree(session: GameSession) {
+  startPlaying(session)
+  completeCurrentBoard(session)
+  completeCurrentBoard(session)
+}
+
+function startGoldenEvent(session: GameSession) {
+  advanceToRoundThree(session)
+  session.dispatch({ type: 'tick', deltaMs: 3000 })
+  session.dispatch({ type: 'tick', deltaMs: 2500 })
 }
 
 describe('Board layout', () => {
   it('uses the requested rows by columns layout for each round', () => {
-    const layouts = [1, 2, 3, 4, 5, 6].map((round) => {
-      const { rows, columns } = getBoardLayout(round)
+    const layouts = [1, 2, 3, 4, 5, 6, 7].map((round) => {
+      const { rows, columns } = getBoardLayout(round, DEFAULT_TEST_CONFIG)
       return `${rows}x${columns}`
     })
 
-    expect(layouts).toEqual(['2x2', '2x3', '2x4', '3x4', '4x4', '4x4'])
+    expect(layouts).toEqual(['2x2', '3x2', '4x2', '4x3', '4x4', '5x4', '5x4'])
   })
 })
 
@@ -32,10 +64,10 @@ describe('Game Session start', () => {
 
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     expect(session.getState().phase).toBe('first-turn-hint')
-    expect(session.getState().firstTurnHintMs).toBe(1200)
+    expect(session.getState().firstTurnHintMs).toBe(2000)
     expect(session.getState().remainingMs).toBe(120000)
 
-    session.dispatch({ type: 'tick', deltaMs: 1200 })
+    session.dispatch({ type: 'tick', deltaMs: 2000 })
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().remainingMs).toBe(120000)
   })
@@ -50,7 +82,7 @@ describe('Game Session start', () => {
     session.dispatch({ type: 'select-card', cardId: session.getState().board[0].id })
     expect(session.getState().selectedCardIds).toEqual([])
 
-    session.dispatch({ type: 'tick', deltaMs: 1199 })
+    session.dispatch({ type: 'tick', deltaMs: 1999 })
     expect(session.getState().phase).toBe('first-turn-hint')
     expect(session.getState().firstTurnHintMs).toBe(1)
     session.dispatch({ type: 'tick', deltaMs: 1 })
@@ -134,7 +166,7 @@ describe('Game Session start', () => {
   })
 
   it('continues counting down while a Mismatch is being revealed', () => {
-    const session = createGameSession({ durationMs: 1000, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 1000 } }), random: () => 0 })
     startPlaying(session)
     const [firstCard, secondCard] = session.getState().board
 
@@ -176,7 +208,7 @@ describe('Game Session start', () => {
   })
 
   it('finishes the Game Session at zero and preserves the best High Score', () => {
-    const session = createGameSession({ durationMs: 1000, highScore: 7, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 1000 } }), highScore: 7, random: () => 0 })
     startPlaying(session)
     session.dispatch({ type: 'tick', deltaMs: 999 })
 
@@ -191,7 +223,7 @@ describe('Game Session start', () => {
   })
 
   it('resolves a second-card Mismatch accepted before zero before finishing', () => {
-    const session = createGameSession({ durationMs: 1, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 1 } }), random: () => 0 })
     startPlaying(session)
     const [firstCard, secondCard] = session.getState().board
 
@@ -207,7 +239,7 @@ describe('Game Session start', () => {
   })
 
   it('updates High Score when the finished Score beats the saved value', () => {
-    const session = createGameSession({ durationMs: 1000, highScore: 7, random: () => 0 })
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 1000 } }), highScore: 7, random: () => 0 })
     startPlaying(session)
     const [firstCard, matchingCard] = session.getState().board.filter(
       (card, _, board) => card.character === board[0].character,
@@ -221,10 +253,10 @@ describe('Game Session start', () => {
     expect(session.getState().highScore).toBe(10)
   })
 
-  it('caps Board size at sixteen cards while continuing to increase the Round number', () => {
+  it('caps Board size at twenty cards while continuing to increase the Round number', () => {
     const session = createGameSession({ random: () => 0 })
     startPlaying(session)
-    const expectedSizes = [4, 6, 8, 12, 16]
+    const expectedSizes = [4, 6, 8, 12, 16, 20]
 
     for (const expectedSize of expectedSizes) {
       expect(session.getState().board).toHaveLength(expectedSize)
@@ -240,8 +272,8 @@ describe('Game Session start', () => {
       session.dispatch({ type: 'tick', deltaMs: 800 })
     }
 
-    expect(session.getState().round).toBe(6)
-    expect(session.getState().board).toHaveLength(16)
+    expect(session.getState().round).toBe(7)
+    expect(session.getState().board).toHaveLength(20)
     expect(session.getState().board.every((card) => card.status === 'hidden')).toBe(true)
   })
 
@@ -282,7 +314,7 @@ describe('Game Session start', () => {
     expect(session.getState().countdownMs).toBe(3000)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     expect(session.getState().phase).toBe('first-turn-hint')
-    session.dispatch({ type: 'tick', deltaMs: 1200 })
+    session.dispatch({ type: 'tick', deltaMs: 2000 })
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().remainingMs).toBe(120000)
   })
@@ -314,5 +346,368 @@ describe('Game Session start', () => {
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().firstTurnHintMs).toBeNull()
     expect(session.getState().remainingMs).toBe(120000)
+  })
+
+  it('uses injected flow and scoring rules through the public Session API', () => {
+    const config = createGameConfig({
+      rounds: { layouts: [{ rows: 3, columns: 2, cardCount: 6 }] },
+      flow: { countdownMs: 10, firstTurnHintMs: 20, mismatchRevealMs: 30, roundTransitionMs: 40 },
+      scoring: { matchScore: 4, mismatchPenalty: 2 },
+    })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
+
+    session.dispatch({ type: 'begin' })
+    expect(session.getState().countdownMs).toBe(10)
+    session.dispatch({ type: 'tick', deltaMs: 10 })
+    expect(session.getState().firstTurnHintMs).toBe(20)
+    session.dispatch({ type: 'tick', deltaMs: 20 })
+
+    const [firstCard, matchingCard] = session.getState().board.filter(
+      (card, _, board) => card.character === board[0].character,
+    )
+    session.dispatch({ type: 'select-card', cardId: firstCard.id })
+    session.dispatch({ type: 'select-card', cardId: matchingCard.id })
+    expect(session.getState().score).toBe(4)
+
+    const mismatchFirst = session.getState().board.find((card) => card.status === 'hidden')!
+    const mismatchSecond = session.getState().board.find(
+      (card) => card.status === 'hidden' && card.character !== mismatchFirst.character,
+    )!
+    session.dispatch({ type: 'select-card', cardId: mismatchFirst.id })
+    session.dispatch({ type: 'select-card', cardId: mismatchSecond.id })
+    expect(session.getState().score).toBe(2)
+    expect(session.getState().pendingResolutionMs).toBe(30)
+  })
+
+  it('keeps zero-duration flow phases as separate ticks', () => {
+    const config = createGameConfig({ flow: { countdownMs: 0, firstTurnHintMs: 0 } })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
+
+    session.dispatch({ type: 'begin' })
+    expect(session.getState().phase).toBe('countdown')
+    session.dispatch({ type: 'tick', deltaMs: 0 })
+    expect(session.getState().phase).toBe('first-turn-hint')
+    session.dispatch({ type: 'tick', deltaMs: 0 })
+    expect(session.getState().phase).toBe('playing')
+  })
+
+  it('uses the configured Round transition duration', () => {
+    const config = createGameConfig({ flow: { roundTransitionMs: 40 } })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
+    startPlaying(session)
+
+    const characters = [...new Set(session.getState().board.map((card) => card.character))]
+    for (const character of characters) {
+      const pair = session.getState().board.filter((card) => card.character === character)
+      session.dispatch({ type: 'select-card', cardId: pair[0].id })
+      session.dispatch({ type: 'select-card', cardId: pair[1].id })
+    }
+
+    expect(session.getState().phase).toBe('transitioning-round')
+    expect(session.getState().transitionRemainingMs).toBe(40)
+    session.dispatch({ type: 'tick', deltaMs: 39 })
+    expect(session.getState().phase).toBe('transitioning-round')
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().round).toBe(2)
+  })
+})
+
+describe('Golden Card Event', () => {
+  it('honors a custom start Round, the inclusive schedule upper bound, and the exact time threshold', () => {
+    const config = createGameConfig({
+      rounds: { layouts: [{ rows: 2, columns: 2, cardCount: 4 }] },
+      goldenEvent: {
+        startRound: 2,
+        scheduleDelayMinMs: 11,
+        scheduleDelayMaxMs: 13,
+        minRemainingMs: 120_000,
+      },
+    })
+    const session = createConfiguredGameSession(config, { random: () => 0.999999 })
+    startPlaying(session)
+    completeCurrentBoard(session)
+
+    expect(session.getState().round).toBe(2)
+    expect(session.getState().remainingMs).toBe(120_000)
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(13)
+  })
+
+  it('uses independent Golden Timer, bonus, and penalty config fields', () => {
+    const config = createGameConfig({
+      goldenEvent: {
+        timerMs: 1_000,
+        successScoreBonus: 7,
+        successTimeBonusMs: 1_234,
+        failureTimePenaltyMs: 321,
+      },
+    })
+    const session = createConfiguredGameSession(config, { random: () => 0 })
+    startGoldenEvent(session)
+
+    const beforeMatch = session.getState()
+    expect(beforeMatch.goldenTimerMs).toBe(1_000)
+    const goldenCard = beforeMatch.board.find((card) => card.id === beforeMatch.goldenCardId)!
+    const matchingCard = beforeMatch.board.find(
+      (card) => card.id !== goldenCard.id && card.character === goldenCard.character,
+    )!
+    session.dispatch({ type: 'select-card', cardId: goldenCard.id })
+    session.dispatch({ type: 'select-card', cardId: matchingCard.id })
+
+    expect(session.getState().score).toBe(beforeMatch.score + 17)
+    expect(session.getState().remainingMs).toBe(beforeMatch.remainingMs + 1_234)
+  })
+
+  it('schedules once on Round 3 and starts after its active-play delay', () => {
+    const session = createGameSession({ random: () => 0 })
+    advanceToRoundThree(session)
+
+    expect(session.getState().round).toBe(3)
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(3000)
+
+    session.dispatch({ type: 'tick', deltaMs: 2999 })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('golden-alert')
+    expect(session.getState().goldenEventStatus).toBe('alert')
+    expect(session.getState().goldenAlertMs).toBe(2500)
+    expect(session.getState().goldenCardId).not.toBeNull()
+  })
+
+  it('pauses the main clock during the Alert and then starts a five-second Golden Timer', () => {
+    const session = createGameSession({ random: () => 0 })
+    advanceToRoundThree(session)
+    const remainingBeforeAlert = session.getState().remainingMs
+
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    expect(session.getState().remainingMs).toBe(remainingBeforeAlert - 3000)
+    session.dispatch({ type: 'tick', deltaMs: 1200 })
+    expect(session.getState().remainingMs).toBe(remainingBeforeAlert - 3000)
+    expect(session.getState().phase).toBe('golden-alert')
+
+    session.dispatch({ type: 'tick', deltaMs: 1300 })
+    expect(session.getState().phase).toBe('golden-playing')
+    expect(session.getState().goldenTimerMs).toBe(5000)
+    expect(session.getState().remainingMs).toBe(remainingBeforeAlert - 3000)
+  })
+
+  it('defers activation until a pending Card selection is resolved', () => {
+    const session = createGameSession({ random: () => 0 })
+    advanceToRoundThree(session)
+    session.dispatch({ type: 'tick', deltaMs: 2999 })
+    const firstCard = session.getState().board[0]
+    const matchingCard = session.getState().board.find(
+      (card) => card.id !== firstCard.id && card.character === firstCard.character,
+    )!
+
+    session.dispatch({ type: 'select-card', cardId: firstCard.id })
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(0)
+
+    session.dispatch({ type: 'select-card', cardId: matchingCard.id })
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('golden-alert')
+    expect(session.getState().goldenEventStatus).toBe('alert')
+  })
+
+  it('reveals the Golden Card and awards the normal Match plus its bonus', () => {
+    const session = createGameSession({ random: () => 0 })
+    startGoldenEvent(session)
+    const stateBeforeMatch = session.getState()
+    const goldenCard = stateBeforeMatch.board.find((card) => card.id === stateBeforeMatch.goldenCardId)!
+    const matchingCard = stateBeforeMatch.board.find(
+      (card) => card.id !== goldenCard.id && card.character === goldenCard.character,
+    )!
+
+    session.dispatch({ type: 'select-card', cardId: goldenCard.id })
+    expect(session.getState().selectedCardIds).toEqual([goldenCard.id])
+    session.dispatch({ type: 'select-card', cardId: matchingCard.id })
+
+    const state = session.getState()
+    expect(state.score).toBe(stateBeforeMatch.score + 15)
+    expect(state.remainingMs).toBe(stateBeforeMatch.remainingMs + 5000)
+    expect(state.remainingMs).toBeGreaterThan(120000)
+    expect(state.goldenEventStatus).toBe('completed')
+    expect(state.goldenOutcome).toBe('success')
+    expect(state.goldenTimerMs).toBeNull()
+    expect(state.selectedCardIds).toEqual([])
+    expect(state.board.filter((card) => card.character === goldenCard.character)).toEqual([
+      expect.objectContaining({ status: 'matched' }),
+      expect.objectContaining({ status: 'matched' }),
+    ])
+  })
+
+  it('fails immediately on a wrong Card and deducts five seconds without Score loss', () => {
+    const session = createGameSession({ random: () => 0 })
+    startGoldenEvent(session)
+    const stateBeforeMatch = session.getState()
+    const goldenCard = stateBeforeMatch.board.find((card) => card.id === stateBeforeMatch.goldenCardId)!
+    const wrongCard = stateBeforeMatch.board.find((card) => card.character !== goldenCard.character)!
+
+    session.dispatch({ type: 'select-card', cardId: goldenCard.id })
+    session.dispatch({ type: 'select-card', cardId: wrongCard.id })
+
+    expect(session.getState().phase).toBe('golden-resolving-mismatch')
+    expect(session.getState().score).toBe(stateBeforeMatch.score)
+    expect(session.getState().remainingMs).toBe(stateBeforeMatch.remainingMs - 5000)
+    expect(session.getState().goldenOutcome).toBe('failure')
+
+    session.dispatch({ type: 'tick', deltaMs: 700 })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().goldenEventStatus).toBe('completed')
+    expect(session.getState().selectedCardIds).toEqual([])
+  })
+
+  it('fails when the Golden Timer expires and returns the Card to the normal Board', () => {
+    const session = createGameSession({ random: () => 0 })
+    startGoldenEvent(session)
+    const stateBeforeTimeout = session.getState()
+
+    session.dispatch({ type: 'tick', deltaMs: 5000 })
+
+    const state = session.getState()
+    expect(state.phase).toBe('playing')
+    expect(state.remainingMs).toBe(stateBeforeTimeout.remainingMs - 5000 - 5000)
+    expect(state.goldenEventStatus).toBe('completed')
+    expect(state.goldenOutcome).toBe('failure')
+    expect(state.goldenTimerMs).toBeNull()
+    expect(state.board.every((card) => card.status === 'hidden')).toBe(true)
+  })
+
+  it('preserves Golden Card Event timing through pause and resume', () => {
+    const session = createGameSession({ random: () => 0 })
+    startGoldenEvent(session)
+    session.dispatch({ type: 'tick', deltaMs: 1000 })
+    const beforePause = session.getState()
+
+    session.dispatch({ type: 'pause' })
+    expect(session.getState().phase).toBe('paused')
+    session.dispatch({ type: 'tick', deltaMs: 5000 })
+    expect(session.getState().remainingMs).toBe(beforePause.remainingMs)
+    expect(session.getState().goldenTimerMs).toBe(beforePause.goldenTimerMs)
+
+    session.dispatch({ type: 'resume' })
+    expect(session.getState().phase).toBe('countdown')
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    expect(session.getState().phase).toBe('golden-playing')
+    expect(session.getState().remainingMs).toBe(beforePause.remainingMs)
+    expect(session.getState().goldenTimerMs).toBe(beforePause.goldenTimerMs)
+  })
+
+  it('pauses and resumes the Alert without spending Golden or Game Session time', () => {
+    const session = createGameSession({ random: () => 0 })
+    advanceToRoundThree(session)
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    const beforePause = session.getState()
+
+    session.dispatch({ type: 'pause' })
+    session.dispatch({ type: 'tick', deltaMs: 5000 })
+    expect(session.getState().phase).toBe('paused')
+    expect(session.getState().remainingMs).toBe(beforePause.remainingMs)
+    expect(session.getState().goldenAlertMs).toBe(beforePause.goldenAlertMs)
+
+    session.dispatch({ type: 'resume' })
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    expect(session.getState().phase).toBe('golden-alert')
+    expect(session.getState().goldenAlertMs).toBe(beforePause.goldenAlertMs)
+    session.dispatch({ type: 'tick', deltaMs: 2500 })
+    expect(session.getState().phase).toBe('golden-playing')
+  })
+
+  it('carries an unstarted Golden Card Event into the next Round and never repeats it after completion', () => {
+    const session = createGameSession({ random: () => 0 })
+    advanceToRoundThree(session)
+    completeCurrentBoard(session)
+    expect(session.getState().round).toBe(4)
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(3000)
+
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    expect(session.getState().phase).toBe('golden-alert')
+    session.dispatch({ type: 'tick', deltaMs: 2500 })
+    const stateBeforeMatch = session.getState()
+    const goldenCard = stateBeforeMatch.board.find((card) => card.id === stateBeforeMatch.goldenCardId)!
+    const matchingCard = stateBeforeMatch.board.find(
+      (card) => card.id !== goldenCard.id && card.character === goldenCard.character,
+    )!
+    session.dispatch({ type: 'select-card', cardId: goldenCard.id })
+    session.dispatch({ type: 'select-card', cardId: matchingCard.id })
+
+    expect(session.getState().goldenEventStatus).toBe('completed')
+    completeCurrentBoard(session)
+    expect(session.getState().goldenEventStatus).toBe('completed')
+  })
+
+  it('defers the Golden Card Event when only the final hidden pair remains', () => {
+    const session = createGameSession({ random: () => 0 })
+    advanceToRoundThree(session)
+    const characters = [...new Set(session.getState().board.map((card) => card.character))]
+    for (const character of characters.slice(0, -1)) {
+      const pair = session.getState().board.filter((card) => card.character === character)
+      session.dispatch({ type: 'select-card', cardId: pair[0].id })
+      session.dispatch({ type: 'select-card', cardId: pair[1].id })
+    }
+
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(0)
+
+    const scoreBeforeFinalPair = session.getState().score
+    const finalPair = session.getState().board.filter((card) => card.status === 'hidden')
+    session.dispatch({ type: 'select-card', cardId: finalPair[0].id })
+    session.dispatch({ type: 'select-card', cardId: finalPair[1].id })
+
+    expect(session.getState().phase).toBe('transitioning-round')
+    expect(session.getState().transitionRemainingMs).toBe(800)
+    expect(session.getState().score).toBe(scoreBeforeFinalPair + 10)
+    session.dispatch({ type: 'tick', deltaMs: 800 })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().round).toBe(4)
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(0)
+
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('golden-alert')
+    expect(session.getState().goldenCardId).not.toBeNull()
+  })
+
+  it('finishes without an extra Golden penalty when the main clock reaches zero first', () => {
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 30_000 } }), random: () => 0 })
+    advanceToRoundThree(session)
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    session.dispatch({ type: 'tick', deltaMs: 2500 })
+    session.dispatch({ type: 'tick', deltaMs: 30_000 })
+
+    expect(session.getState().phase).toBe('finished')
+    expect(session.getState().remainingMs).toBe(0)
+    expect(session.getState().goldenOutcome).toBeNull()
+    expect(session.getState().score).toBe(50)
+  })
+
+  it('clamps the failure penalty when the Golden Timer expires near zero', () => {
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 30_000 } }), random: () => 0 })
+    advanceToRoundThree(session)
+    session.dispatch({ type: 'tick', deltaMs: 3000 })
+    session.dispatch({ type: 'tick', deltaMs: 2500 })
+    session.dispatch({ type: 'tick', deltaMs: 23_000 })
+
+    expect(session.getState().phase).toBe('finished')
+    expect(session.getState().remainingMs).toBe(0)
+    expect(session.getState().goldenOutcome).toBe('failure')
+  })
+
+  it('cancels the pending Golden Card Event if the Game Session reaches Round 3 too late', () => {
+    const session = createGameSession({ config: createGameConfig({ session: { durationMs: 19_000 } }), random: () => 0 })
+    advanceToRoundThree(session)
+
+    expect(session.getState().round).toBe(3)
+    expect(session.getState().goldenEventStatus).toBe('cancelled')
+    expect(session.getState().goldenScheduleMs).toBeNull()
   })
 })

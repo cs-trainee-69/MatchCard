@@ -1,0 +1,27 @@
+@keyframes start-text-in { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes start-cat-in { from { opacity: 0; transform: translate(15px, 10px) rotate(15deg) scale(0.76); } to { opacity: 1; transform: translate(0, 0) rotate(8deg) scale(1); } }
+@keyframes countdown-pop { from { opacity: 0; transform: scale(1.35); } to { opacity: 1; transform: scale(1); } }
+@keyframes hint-pop { 0% { opacity: 0; transform: scale(0.82); } 18% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0; transform: scale(1); } }
+@keyframes score-pop { 0% { transform: scale(0.88); } 35% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes feedback-pop { 0% { opacity: 0; transform: translate(-50%, 12px) scale(0.75); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.05); } 100% { opacity: 0; transform: translate(-50%, -24px) scale(1); } }
+@keyframes match-card-pop { 0% { transform: scale(1); } 28% { transform: scale(1.07) rotate(-1deg); } 56% { transform: scale(0.98) rotate(1deg); } 100% { transform: scale(1); } }
+@keyframes match-card-glow { 0% { opacity: 0; transform: scale(0.84); } 28% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0.45; transform: scale(1); } }
+@keyframes mismatch-shake { 0%, 100% { transform: translateX(0) rotate(0); } 18% { transform: translateX(-5px) rotate(-1deg); } 36% { transform: translateX(5px) rotate(1deg); } 54% { transform: translateX(-4px) rotate(-1deg); } 72% { transform: translateX(3px) rotate(1deg); } }
+@keyframes mismatch-mark-pop { 0% { opacity: 0; transform: translate(-50%, 5px) scale(0.6) rotate(-20deg); } 25% { opacity: 1; transform: translate(-50%, -50%) scale(1.1) rotate(-9deg); } 100% { opacity: 0.9; transform: translate(-50%, -50%) scale(1) rotate(-9deg); } }
+@keyframes round-celebration-in { 0% { opacity: 0; transform: translateY(12px) scale(0.84); } 24% { opacity: 1; } 100% { opacity: 1; transform: translateY(-3%) scale(1); } }
+@keyframes round-cat-pop { 0% { opacity: 0; transform: translate(-18px, 13px) rotate(-16deg) scale(0.8); } 100% { opacity: 1; transform: translate(0, 0) rotate(-7deg) scale(1); } }
+@keyframes round-confetti-fall { 0% { opacity: 0; transform: translate(0, -7px) rotate(0) scale(0.5); } 24% { opacity: 1; } 100% { opacity: 0.86; transform: translate(var(--confetti-x), var(--confetti-y)) rotate(var(--confetti-rotate)) scale(1); } }
+@keyframes match-burst { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.35); } 22% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.75); } }
+@keyframes paw-travel { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.65) rotate(-15deg); } 20% { opacity: 1; } 100% { opacity: 1; transform: translate(calc(-50% + var(--travel-x)), calc(-50% + var(--travel-y))) scale(0.95) rotate(15deg); } }
+@keyframes score-impact { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); } 35% { opacity: 1; box-shadow: 0 0 0 12px rgba(255, 226, 150, 0.26); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2.8); box-shadow: 0 0 0 0 rgba(255, 226, 150, 0); } }
+@keyframes result-card-in { from { opacity: 0; transform: translateY(14px) scale(0.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes result-cat-in { from { opacity: 0; transform: translate(14px, 8px) rotate(16deg) scale(0.74); } to { opacity: 1; transform: translate(0, 0) rotate(9deg) scale(1); } }
+@keyframes result-sparkle { from { opacity: 0.42; transform: scale(0.86) rotate(-8deg); } to { opacity: 1; transform: scale(1.08) rotate(8deg); } }
+@keyframes reduced-fade { from { opacity: 0; } to { opacity: 0.82; } }
+@keyframes reduced-impact { from { opacity: 0; } 50% { opacity: 1; } to { opacity: 0; } }
+@keyframes pulse-warning { from { filter: drop-shadow(0 4px 3px rgba(76, 39, 36, 0.2)); } to { filter: drop-shadow(0 4px 8px rgba(255, 153, 40, 0.88)) saturate(1.12); } }
+@keyframes pulse-warning-critical { from { filter: drop-shadow(0 4px 5px rgba(76, 39, 36, 0.22)) saturate(1.08); } to { filter: drop-shadow(0 4px 12px rgba(255, 91, 61, 0.95)) saturate(1.28); } }
+@keyframes urgency-breathe { from { opacity: 0.6; } to { opacity: 1; } }
+@keyframes urgency-critical { from { opacity: 0.55; } to { opacity: 1; } }
+@keyframes golden-card-pulse { from { opacity: 0.58; transform: scale(0.98); } to { opacity: 1; transform: scale(1.015); } }
+@keyframes golden-alert-cat-in { from { opacity: 0; transform: translate(16px, 10px) rotate(17deg) scale(0.75); } to { opacity: 1; transform: translate(0, 0) rotate(8deg) scale(1); } }

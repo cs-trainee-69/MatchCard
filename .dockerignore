@@ -1,0 +1,10 @@
+.git
+.gitignore
+.env*
+node_modules
+dist
+test-results
+playwright-report
+.pnpm-store
+*.tsbuildinfo
+debug.log
