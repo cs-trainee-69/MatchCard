@@ -97,7 +97,7 @@ export function useGameFeedback({ session, state, config, soundEnabled, dispatch
       return
     }
 
-    const newlyMatchedCards = findNewlyMatchedCards(state, previous)
+    const newlyMatchedCards = state.board === previous.board ? [] : findNewlyMatchedCards(state, previous)
 
     if (newlyMatchedCards.length >= 2) {
       const frame = frameRef.current

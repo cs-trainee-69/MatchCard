@@ -23,6 +23,7 @@
   inset: 0;
   z-index: -2;
   background: linear-gradient(180deg, rgba(255, 229, 191, 0.05), rgba(47, 22, 30, 0.2)), url('/background.png') center / cover;
+  background-image: linear-gradient(180deg, rgba(255, 229, 191, 0.05), rgba(47, 22, 30, 0.2)), image-set(url('/optimized/background-941.webp') type('image/webp'), url('/background.png') type('image/png'));
 }
 
 .game-content {

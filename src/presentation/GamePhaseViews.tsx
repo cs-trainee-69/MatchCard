@@ -2,8 +2,8 @@ import { type GameState } from '../domain/gameSession'
 import { formatRuleDurationMs, type GameConfig } from '../domain/gameConfig'
 import { PawIcon } from './PawIcon'
 import { getWarningLevel } from './warning'
-
-const CELEBRATION_IMAGE = '/card/cat/cat-celebration.png'
+import { CELEBRATION_IMAGE, GOLDEN_IMAGE } from './gameImages'
+import { GameImage } from './GameImage'
 
 function RoundCelebration({ state }: { state: GameState }) {
   return (
@@ -16,7 +16,7 @@ function RoundCelebration({ state }: { state: GameState }) {
         ))}
       </div>
       <div className="round-celebration-card">
-        <img className="round-celebration-cat" src={CELEBRATION_IMAGE} alt="" aria-hidden="true" />
+        <GameImage className="round-celebration-cat" src={CELEBRATION_IMAGE} sizes="112px" alt="" aria-hidden="true" />
         <div className="round-celebration-copy">
           <p className="eyebrow">Round complete</p>
           <strong>Round {state.round + 1}</strong>
@@ -29,7 +29,7 @@ function RoundCelebration({ state }: { state: GameState }) {
 function StartOverlay({ onStart }: { onStart: () => void }) {
   return (
     <div className="overlay overlay-start">
-      <img className="start-cat" src={CELEBRATION_IMAGE} alt="" aria-hidden="true" />
+      <GameImage className="start-cat" src={CELEBRATION_IMAGE} sizes="140px" alt="" aria-hidden="true" />
       <div className="start-floating-copy">
         <p className="eyebrow">Cat Card</p>
         <p className="start-subtitle" lang="th">จับคู่แมวให้ครบก่อนเวลาหมด</p>
@@ -61,7 +61,7 @@ function GoldenAlertOverlay({ timerMs }: { timerMs: number }) {
   return (
     <div className="overlay overlay-golden-alert" data-testid="golden-alert" role="alert" aria-live="assertive">
       <div className="overlay-card golden-alert-card">
-        <img className="golden-alert-cat" src="/card/cat/golden-cat.png" alt="" aria-hidden="true" />
+        <GameImage className="golden-alert-cat" src={GOLDEN_IMAGE} sizes="90px" alt="" aria-hidden="true" />
         <p className="eyebrow">GOLDEN CAT!</p>
         <h2>Special card</h2>
         <p className="golden-alert-instruction" lang="th">เปิดแมวทอง แล้วหาคู่ให้ทันใน {formatRuleDurationMs(timerMs).replace(' seconds', ' วินาที')}!</p>
@@ -94,7 +94,7 @@ function ResultOverlay({ state, isNewHighScore, onReplay }: { state: GameState; 
           <span>✧</span>
           <span>✦</span>
         </div>
-        <img className="result-cat-card" src={CELEBRATION_IMAGE} alt="" aria-hidden="true" />
+        <GameImage className="result-cat-card" src={CELEBRATION_IMAGE} sizes="112px" alt="" aria-hidden="true" />
         <div className="result-card-content">
           <p className="eyebrow">Game Result</p>
           <h2>Time's up</h2>

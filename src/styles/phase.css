@@ -1,4 +1,5 @@
 .overlay { position: absolute; inset: 0; z-index: 4; display: grid; place-items: center; padding: 22px; background: rgba(23, 10, 19, 0.48); backdrop-filter: blur(4px); }
+.overlay picture, .round-celebration-card picture { display: contents; }
 .overlay-card { width: min(100%, 330px); padding: clamp(22px, 6vw, 36px) 22px; text-align: center; border: 2px solid rgba(255, 235, 211, 0.58); border-radius: 27px; background: linear-gradient(145deg, rgba(89, 45, 57, 0.97), rgba(43, 22, 36, 0.98)); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
 .eyebrow { margin: 0 0 8px; color: #f7c986; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; }
 .overlay h2 { margin: 0; color: #fff6e8; font-size: clamp(1.7rem, 7vw, 2.55rem); line-height: 0.98; letter-spacing: -0.045em; }
@@ -24,6 +25,7 @@
 .first-turn-hint { margin: 0; color: #fff3d4; font-size: clamp(2rem, 11vw, 4.4rem); font-weight: 700; letter-spacing: 0.08em; text-shadow: 0 5px 0 rgba(102, 49, 57, 0.7), 0 12px 25px rgba(0,0,0,0.3); animation: hint-pop 2s ease both; }
 .overlay-golden-alert { background: rgba(17, 24, 32, 0.68); }
 .golden-alert-card { position: relative; width: min(100%, 330px); min-height: 0; aspect-ratio: 1 / 1; overflow: hidden; padding: 30px 29px 30px; border: 0; border-radius: 34px; background: url('/ui/golden-alert-panel.png') center / 100% 100% no-repeat; box-shadow: 0 20px 50px rgba(0,0,0,0.34), 0 0 32px rgba(255, 190, 65, 0.28); }
+.golden-alert-card { background-image: image-set(url('/optimized/ui/golden-alert-panel-512.webp') 1x type('image/webp'), url('/optimized/ui/golden-alert-panel-1024.webp') 2x type('image/webp'), url('/optimized/ui/golden-alert-panel-1254.webp') 3x type('image/webp'), url('/ui/golden-alert-panel.png') 1x type('image/png')); }
 .golden-alert-card .eyebrow { color: #b45f2a; text-shadow: 0 1px rgba(255,255,255,0.8); }
 .golden-alert-card h2 { margin: 0; color: #5b4058; font-size: clamp(1.45rem, 7vw, 2.1rem); text-shadow: 0 2px rgba(255,255,255,0.86); }
 .golden-alert-instruction { margin: 10px auto 0; max-width: 21ch; color: #704348; font-size: clamp(0.82rem, 3.4vw, 0.98rem); font-weight: 700; line-height: 1.4; text-shadow: 0 1px rgba(255,255,255,0.58); }
@@ -52,6 +54,7 @@
 
 .overlay-result { background: rgba(24, 11, 20, 0.34); backdrop-filter: blur(3px); }
 .result-card { position: relative; width: min(100%, 334px); min-height: 0; aspect-ratio: 1 / 1; overflow: visible; padding: 40px 27px 26px; border: 0; border-radius: 34px; background: url('/ui/result-panel.png') center / 100% 100% no-repeat; box-shadow: 0 22px 46px rgba(26, 8, 18, 0.34); animation: result-card-in 0.45s cubic-bezier(0.2, 0.8, 0.25, 1.05) both; }
+.result-card { background-image: image-set(url('/optimized/ui/result-panel-512.webp') 1x type('image/webp'), url('/optimized/ui/result-panel-1024.webp') 2x type('image/webp'), url('/optimized/ui/result-panel-1254.webp') 3x type('image/webp'), url('/ui/result-panel.png') 1x type('image/png')); }
 .result-card::before, .result-card::after { position: absolute; z-index: 0; color: rgba(255, 220, 142, 0.72); content: '✦'; pointer-events: none; }
 .result-card::before { top: 18px; left: 20px; font-size: 1rem; transform: rotate(-16deg); }
 .result-card::after { right: 19px; bottom: 23px; color: rgba(246, 169, 157, 0.7); font-size: 1.3rem; transform: rotate(14deg); }

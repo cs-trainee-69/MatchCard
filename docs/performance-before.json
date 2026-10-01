@@ -1,0 +1,243 @@
+{
+  "url": "http://127.0.0.1:4174",
+  "viewport": "393x852 @3x, headless Chromium; unthrottled local network",
+  "readyMs": 3531,
+  "rounds": [
+    {
+      "count": 4,
+      "widths": [
+        168,
+        168,
+        168,
+        168
+      ],
+      "sources": [
+        "http://127.0.0.1:4174/card/cat/cat-2.png",
+        "http://127.0.0.1:4174/card/cat/cat-3.png"
+      ],
+      "decoded": true
+    },
+    {
+      "count": 6,
+      "widths": [
+        168,
+        168,
+        168,
+        168,
+        168,
+        168
+      ],
+      "sources": [
+        "http://127.0.0.1:4174/card/cat/cat-2.png",
+        "http://127.0.0.1:4174/card/cat/cat-3.png",
+        "http://127.0.0.1:4174/card/cat/cat-4.png"
+      ],
+      "decoded": true
+    },
+    {
+      "count": 8,
+      "widths": [
+        145,
+        145,
+        145,
+        145,
+        145,
+        145,
+        145,
+        145
+      ],
+      "sources": [
+        "http://127.0.0.1:4174/card/cat/cat-2.png",
+        "http://127.0.0.1:4174/card/cat/cat-3.png",
+        "http://127.0.0.1:4174/card/cat/cat-4.png",
+        "http://127.0.0.1:4174/card/cat/cat-5.png"
+      ],
+      "decoded": true
+    },
+    {
+      "count": 12,
+      "widths": [
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
+      ],
+      "sources": [
+        "http://127.0.0.1:4174/card/cat/cat-2.png",
+        "http://127.0.0.1:4174/card/cat/cat-3.png",
+        "http://127.0.0.1:4174/card/cat/cat-4.png",
+        "http://127.0.0.1:4174/card/cat/cat-5.png",
+        "http://127.0.0.1:4174/card/cat/cat-6.png",
+        ""
+      ],
+      "decoded": false
+    },
+    {
+      "count": 16,
+      "widths": [
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95
+      ],
+      "sources": [
+        "http://127.0.0.1:4174/card/cat/cat-2.png",
+        "http://127.0.0.1:4174/card/cat/cat-3.png",
+        "http://127.0.0.1:4174/card/cat/cat-4.png",
+        "http://127.0.0.1:4174/card/cat/cat-5.png",
+        "http://127.0.0.1:4174/card/cat/cat-6.png",
+        "http://127.0.0.1:4174/card/cat/cat-7.png",
+        "http://127.0.0.1:4174/card/cat/cat-8.png",
+        "http://127.0.0.1:4174/card/cat/cat-9.png"
+      ],
+      "decoded": false
+    },
+    {
+      "count": 20,
+      "widths": [
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95
+      ],
+      "sources": [
+        "http://127.0.0.1:4174/card/cat/cat-2.png",
+        "http://127.0.0.1:4174/card/cat/cat-3.png",
+        "http://127.0.0.1:4174/card/cat/cat-4.png",
+        "http://127.0.0.1:4174/card/cat/cat-5.png",
+        "http://127.0.0.1:4174/card/cat/cat-6.png",
+        "http://127.0.0.1:4174/card/cat/cat-7.png",
+        "http://127.0.0.1:4174/card/cat/cat-8.png",
+        "http://127.0.0.1:4174/card/cat/cat-9.png",
+        "http://127.0.0.1:4174/card/cat/cat-10.png",
+        "http://127.0.0.1:4174/card/cat/cat-1.png"
+      ],
+      "decoded": false
+    }
+  ],
+  "frames": {
+    "count": 150,
+    "p95Ms": 16.700000000000728,
+    "over33Ms": 0
+  },
+  "imageBytes": 21649261,
+  "images": [
+    {
+      "path": "/card/cat/cat-celebration.png",
+      "bytes": 1227874
+    },
+    {
+      "path": "/background.png",
+      "bytes": 1859857
+    },
+    {
+      "path": "/hud-round.png",
+      "bytes": 97831
+    },
+    {
+      "path": "/hud-score.png",
+      "bytes": 99629
+    },
+    {
+      "path": "/hud-time.png",
+      "bytes": 99942
+    },
+    {
+      "path": "/sound-button.png",
+      "bytes": 90866
+    },
+    {
+      "path": "/card/cat-close.png",
+      "bytes": 1127415
+    },
+    {
+      "path": "/card/cat/cat-2.png",
+      "bytes": 1141982
+    },
+    {
+      "path": "/card/cat/cat-3.png",
+      "bytes": 1311491
+    },
+    {
+      "path": "/card/cat/cat-4.png",
+      "bytes": 1229395
+    },
+    {
+      "path": "/card/cat/cat-5.png",
+      "bytes": 1226367
+    },
+    {
+      "path": "/card/cat/cat-6.png",
+      "bytes": 1294047
+    },
+    {
+      "path": "/card/cat/cat-7.png",
+      "bytes": 1311564
+    },
+    {
+      "path": "/card/cat/cat-8.png",
+      "bytes": 1342178
+    },
+    {
+      "path": "/card/cat/cat-9.png",
+      "bytes": 1355112
+    },
+    {
+      "path": "/card/cat/cat-celebration.png",
+      "bytes": 1227874
+    },
+    {
+      "path": "/card/cat/cat-10.png",
+      "bytes": 1358387
+    },
+    {
+      "path": "/card/cat/cat-1.png",
+      "bytes": 1234820
+    },
+    {
+      "path": "/card/cat/golden-cat.png",
+      "bytes": 1618143
+    },
+    {
+      "path": "/ui/golden-alert-panel.png",
+      "bytes": 1394487
+    }
+  ],
+  "failures": []
+}

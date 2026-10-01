@@ -1,6 +1,9 @@
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { type Card, getBoardLayout, type GameState } from '../domain/gameSession'
 import type { GameConfig } from '../domain/gameConfig'
 import type { CatCharacterId } from '../domain/catCharacters'
+import { GameImage } from './GameImage'
+import { CARD_BACK_IMAGE, CHARACTER_IMAGES, GOLDEN_IMAGE, prepareGameImages } from './gameImages'
 
 const CHARACTER_LABELS: Record<CatCharacterId, string> = {
   'cat-1': 'Cat 1',
@@ -15,19 +18,6 @@ const CHARACTER_LABELS: Record<CatCharacterId, string> = {
   'cat-10': 'Cat 10',
 }
 
-const CHARACTER_IMAGES: Record<CatCharacterId, string> = {
-  'cat-1': '/card/cat/cat-1.png',
-  'cat-2': '/card/cat/cat-2.png',
-  'cat-3': '/card/cat/cat-3.png',
-  'cat-4': '/card/cat/cat-4.png',
-  'cat-5': '/card/cat/cat-5.png',
-  'cat-6': '/card/cat/cat-6.png',
-  'cat-7': '/card/cat/cat-7.png',
-  'cat-8': '/card/cat/cat-8.png',
-  'cat-9': '/card/cat/cat-9.png',
-  'cat-10': '/card/cat/cat-10.png',
-}
-
 type CardButtonProps = {
   card: Card
   index: number
@@ -35,20 +25,25 @@ type CardButtonProps = {
   isMismatch: boolean
   isGolden: boolean
   goldenSelectionLocked: boolean
-  cardRef: (element: HTMLButtonElement | null) => void
+  registerCardRef: (cardId: string, element: HTMLButtonElement | null) => void
+  imageSizes: string
   onSelect: (cardId: string) => void
 }
 
-function CardButton({
+const CardButton = memo(function CardButton({
   card,
   index,
   disabled,
   isMismatch,
   isGolden,
   goldenSelectionLocked,
-  cardRef,
+  registerCardRef,
+  imageSizes,
   onSelect,
 }: CardButtonProps) {
+  const cardRef = useCallback((element: HTMLButtonElement | null) => {
+    registerCardRef(card.id, element)
+  }, [card.id, registerCardRef])
   const isHidden = card.status === 'hidden'
   const isMatched = card.status === 'matched'
   const isGoldenCoverVisible = isGolden && isHidden
@@ -71,62 +66,97 @@ function CardButton({
       onClick={() => onSelect(card.id)}
     >
       <span className="card-face card-back" aria-hidden="true">
-        <img src="/card/cat-close.png" alt="" />
+        <GameImage src={CARD_BACK_IMAGE} sizes={imageSizes} alt="" />
       </span>
       {isGoldenCoverVisible && (
         <span className="card-face golden-cover" aria-hidden="true">
-          <img src="/card/cat/golden-cat.png" alt="" />
+          <GameImage src={GOLDEN_IMAGE} sizes={imageSizes} alt="" />
         </span>
       )}
       <span className="card-face card-front" aria-hidden="true">
-        <img src={CHARACTER_IMAGES[card.character]} alt="" />
+        <GameImage src={CHARACTER_IMAGES[card.character]} sizes={imageSizes} alt="" />
       </span>
       {isMismatch && <span className="mismatch-mark" aria-hidden="true">!?</span>}
     </button>
   )
-}
+})
 
 export type BoardProps = {
-  state: GameState
+  cards: GameState['board']
+  round: GameState['round']
+  phase: GameState['phase']
+  selectedCardIds: GameState['selectedCardIds']
+  goldenEventStatus: GameState['goldenEventStatus']
+  goldenCardId: GameState['goldenCardId']
   config: GameConfig
   onSelect: (cardId: string) => void
   registerCardRef: (cardId: string, element: HTMLButtonElement | null) => void
 }
 
-export function Board({ state, config, onSelect, registerCardRef }: BoardProps) {
-  const boardLayout = getBoardLayout(state.round, config)
-  const cardsDisabled = state.phase !== 'playing' && state.phase !== 'golden-playing'
-  const goldenSelectionLocked = state.phase === 'golden-playing' && state.selectedCardIds.length === 0
+export const Board = memo(function Board({
+  cards, round, phase, selectedCardIds, goldenEventStatus, goldenCardId,
+  config, onSelect, registerCardRef,
+}: BoardProps) {
+  const boardLayout = getBoardLayout(round, config)
+  const cardsDisabled = phase !== 'playing' && phase !== 'golden-playing'
+  const goldenSelectionLocked = phase === 'golden-playing' && selectedCardIds.length === 0
+  const layoutRef = useRef<HTMLDivElement | null>(null)
+  const warmedImages = useRef(false)
+  const [imageWidth, setImageWidth] = useState<number | null>(null)
+  const imageSizes = `${imageWidth ?? Math.ceil(360 / boardLayout.columns)}px`
 
-  if (state.board.length === 0) return <div className="board-wrap" />
+  useLayoutEffect(() => {
+    const layout = layoutRef.current
+    if (!layout) return
+    const measure = () => {
+      const card = layout.querySelector('.card-button')
+      const width = card?.getBoundingClientRect().width ?? 0
+      if (width > 0) setImageWidth(Math.ceil(width * 1.07))
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(layout)
+    return () => observer.disconnect()
+  }, [boardLayout.columns, boardLayout.rows, cards.length])
+
+  useEffect(() => {
+    if (imageWidth === null || warmedImages.current) return
+    warmedImages.current = true
+    void prepareGameImages(imageSizes)
+  }, [imageWidth, imageSizes])
+
+  if (cards.length === 0) return <div className="board-wrap" />
 
   return (
     <div className="board-wrap">
       <div
+        ref={layoutRef}
         className="board-layout"
         data-board-layout={`${boardLayout.rows}x${boardLayout.columns}`}
         style={{ gridTemplateColumns: `repeat(${boardLayout.columns}, minmax(0, 1fr))` }}
       >
-        {state.board.map((card, index) => (
+        {cards.map((card, index) => (
           <CardButton
             key={card.id}
             card={card}
             index={index}
             disabled={cardsDisabled}
             isMismatch={
-              (state.phase === 'resolving-mismatch' || state.phase === 'golden-resolving-mismatch') &&
-              state.selectedCardIds.includes(card.id)
+              (phase === 'resolving-mismatch' || phase === 'golden-resolving-mismatch') &&
+              selectedCardIds.includes(card.id)
             }
             isGolden={
-              (state.goldenEventStatus === 'alert' || state.goldenEventStatus === 'active') &&
-              state.goldenCardId === card.id
+              (goldenEventStatus === 'alert' || goldenEventStatus === 'active') &&
+              goldenCardId === card.id
             }
             goldenSelectionLocked={goldenSelectionLocked}
-            cardRef={(element) => registerCardRef(card.id, element)}
+            registerCardRef={registerCardRef}
+            imageSizes={imageSizes}
             onSelect={onSelect}
           />
         ))}
       </div>
     </div>
   )
-}
+})
