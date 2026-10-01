@@ -1,4 +1,5 @@
-.hud { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(2px, 0.8vw, 5px); }
+/* Keep score feedback above the cards' transform/filter stacking contexts. */
+.hud { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(2px, 0.8vw, 5px); }
 .hud-stat {
   display: grid;
   align-content: center;

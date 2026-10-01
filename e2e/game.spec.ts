@@ -112,6 +112,42 @@ async function expectFeedbackLayout(
   expect(Math.abs(scoreBox!.height - scoreBoxBefore.height)).toBeLessThanOrEqual(1)
 }
 
+for (const outcome of ['match', 'mismatch'] as const) {
+  test(`paints ${outcome} feedback above overlapping cards on a short mobile screen`, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 480 })
+    await startPlaying(page)
+    // Freeze the visual pose so the overlap check does not depend on animation timing.
+    await page.addStyleTag({ content: '.feedback-toast, .card-button { animation: none !important; }' })
+    const cards = page.locator('button.card-button')
+    const groups = await cardGroups(page)
+    await cards.nth(groups[0][0]).click()
+    await cards.nth(outcome === 'match' ? groups[0][1] : groups[1][0]).click()
+    const toast = page.locator(`.feedback-${outcome}`)
+    await expect(toast).toBeVisible()
+    const result = await toast.evaluate((element) => {
+      const toastElement = element as HTMLElement
+      const originalPointerEvents = toastElement.style.pointerEvents
+      toastElement.style.pointerEvents = 'auto'
+      const toastBox = toastElement.getBoundingClientRect()
+      const overlaps = [...document.querySelectorAll('.card-button')].flatMap((card) => {
+        const box = card.getBoundingClientRect()
+        const left = Math.max(box.left, toastBox.left)
+        const right = Math.min(box.right, toastBox.right)
+        const top = Math.max(box.top, toastBox.top)
+        const bottom = Math.min(box.bottom, toastBox.bottom)
+        if (right <= left || bottom <= top) return []
+        const topElement = document.elementFromPoint((left + right) / 2, (top + bottom) / 2)
+        return [!!topElement && toastElement.contains(topElement)]
+      })
+      toastElement.style.pointerEvents = originalPointerEvents
+      return overlaps
+    })
+    expect(result.length, 'the short screen must exercise overlapping cards').toBeGreaterThan(0)
+    expect(result, 'feedback must be painted above every overlapping card').not.toContain(false)
+    await expect(toast).toHaveCSS('pointer-events', 'none')
+  })
+}
+
 test('starts the mobile Game Session and exposes the first Board', async ({ page }) => {
   await page.clock.install()
   await page.goto('/')
