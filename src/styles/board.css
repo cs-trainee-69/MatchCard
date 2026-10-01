@@ -14,6 +14,7 @@
 .mismatch-mark { position: absolute; top: 3%; left: 50%; z-index: 3; display: grid; place-items: center; width: 32px; height: 32px; color: #fff1dc; border: 2px solid rgba(255, 184, 167, 0.9); border-radius: 50%; background: rgba(137, 55, 65, 0.92); box-shadow: 0 5px 10px rgba(45, 12, 25, 0.28); transform: translate(-50%, -50%) rotate(-9deg); animation: mismatch-mark-pop 0.62s ease both; font-size: 0.86rem; font-weight: 900; letter-spacing: -0.1em; line-height: 1; }
 .card-face { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; border-radius: inherit; backface-visibility: hidden; transition: transform 220ms ease, opacity 220ms ease; }
 .card-face img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.card-face picture { display: contents; }
 .card-back { transform: rotateY(0deg); }
 .golden-cover { z-index: 2; transform: rotateY(0deg); filter: drop-shadow(0 0 9px rgba(255, 207, 82, 0.94)); }
 .golden-cover img { object-fit: cover; }

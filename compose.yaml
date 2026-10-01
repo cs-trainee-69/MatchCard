@@ -1,0 +1,7 @@
+services:
+  cat-card:
+    build:
+      context: .
+    ports:
+      - "${PORT:-5173}:80"
+    restart: unless-stopped

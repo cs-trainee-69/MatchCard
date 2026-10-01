@@ -43,7 +43,12 @@ export default function GameScreen({ config: requestedConfig }: GameScreenProps 
             timeRef={feedback.timeRef}
           />
           <Board
-            state={runtime.state}
+            cards={runtime.state.board}
+            round={runtime.state.round}
+            phase={runtime.state.phase}
+            selectedCardIds={runtime.state.selectedCardIds}
+            goldenEventStatus={runtime.state.goldenEventStatus}
+            goldenCardId={runtime.state.goldenCardId}
             config={runtime.config}
             registerCardRef={feedback.registerCardRef}
             onSelect={feedback.onSelect}

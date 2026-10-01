@@ -3,6 +3,8 @@ import type { GameConfig } from '../domain/gameConfig'
 import type { GameState } from '../domain/gameSession'
 import type { Feedback } from '../feedback/types'
 import { getWarningLevel } from './warning'
+import { GameImage } from './GameImage'
+import { GOLDEN_IMAGE } from './gameImages'
 
 function formatTime(remainingMs: number): string {
   const totalSeconds = Math.ceil(remainingMs / 1000)
@@ -37,12 +39,12 @@ function GoldenTimer({ remainingMs, durationMs }: { remainingMs: number; duratio
   return (
     <div className="golden-timer" data-testid="golden-timer" data-timer-level={level} role="status" aria-live="polite">
       <div className="golden-timer-heading">
-        <img className="golden-timer-icon" src="/card/cat/golden-cat.png" alt="" aria-hidden="true" />
+        <GameImage className="golden-timer-icon" src={GOLDEN_IMAGE} sizes="19px" alt="" aria-hidden="true" />
         <span>Golden Timer</span>
         <strong>{(remainingMs / 1000).toFixed(1)}s</strong>
       </div>
       <div className="golden-timer-track" aria-hidden="true">
-        <span className="golden-timer-progress" style={{ width: `${progress}%` }} />
+        <span className="golden-timer-progress" style={{ transform: `scaleX(${progress / 100})` }} />
       </div>
     </div>
   )

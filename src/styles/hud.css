@@ -14,6 +14,9 @@
 .hud-round { background-image: url('/hud-round.png'); }
 .hud-score { position: relative; background-image: url('/hud-score.png'); }
 .hud-time { background-image: url('/hud-time.png'); }
+.hud-round { background-image: image-set(url('/optimized/hud-round-347.webp') type('image/webp'), url('/hud-round.png') type('image/png')); }
+.hud-score { background-image: image-set(url('/optimized/hud-score-347.webp') type('image/webp'), url('/hud-score.png') type('image/png')); }
+.hud-time { background-image: image-set(url('/optimized/hud-time-347.webp') type('image/webp'), url('/hud-time.png') type('image/png')); }
 .hud-time.is-warning { animation: pulse-warning 0.85s ease-in-out infinite alternate; }
 .hud-time.is-critical { animation: pulse-warning-critical 0.45s ease-in-out infinite alternate; }
 .hud-label { display: block; margin-bottom: 2px; color: #5b4058; font-size: clamp(0.55rem, 1.7vw, 0.74rem); font-weight: 800; letter-spacing: 0.12em; line-height: 1; text-transform: uppercase; text-shadow: 0 1px rgba(255,255,255,0.7); }
@@ -22,10 +25,11 @@
 
 .golden-timer { width: min(100%, 340px); margin: -7px auto 0; padding: 5px 11px 7px; color: #fff4cf; border: 1px solid rgba(255, 214, 112, 0.7); border-radius: 999px; background: rgba(91, 49, 38, 0.86); box-shadow: 0 5px 13px rgba(45, 14, 18, 0.2), inset 0 1px rgba(255, 255, 255, 0.15); }
 .golden-timer-heading { display: flex; align-items: center; gap: 6px; font-size: clamp(0.58rem, 1.8vw, 0.72rem); font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+.golden-timer-heading picture { display: contents; }
 .golden-timer-heading strong { margin-left: auto; color: #ffe28a; font-size: clamp(0.82rem, 2.8vw, 1rem); letter-spacing: 0.03em; }
 .golden-timer-icon { width: 19px; height: 19px; object-fit: contain; border-radius: 5px; filter: drop-shadow(0 0 4px rgba(255, 213, 84, 0.7)); }
 .golden-timer-track { height: 4px; margin-top: 4px; overflow: hidden; border-radius: 999px; background: rgba(255, 236, 177, 0.2); }
-.golden-timer-progress { display: block; height: 100%; border-radius: inherit; background: #ffdc72; box-shadow: 0 0 8px rgba(255, 203, 65, 0.9); transition: width 100ms linear, background-color 120ms ease; }
+.golden-timer-progress { display: block; width: 100%; height: 100%; transform-origin: left center; border-radius: inherit; background: #ffdc72; box-shadow: 0 0 8px rgba(255, 203, 65, 0.9); transition: transform 100ms linear, background-color 120ms ease; }
 .golden-timer[data-timer-level="warning"] .golden-timer-heading strong { color: #ffb86b; }
 .golden-timer[data-timer-level="warning"] .golden-timer-progress { background: #ff9f56; }
 .golden-timer[data-timer-level="critical"] .golden-timer-heading strong { color: #ff8174; }
