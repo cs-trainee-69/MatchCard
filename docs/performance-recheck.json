@@ -1,0 +1,250 @@
+{
+  "url": "http://127.0.0.1:4181",
+  "viewport": "393x852 @3x, headless Chromium; unthrottled local network",
+  "cpuSlowdown": 1,
+  "readyMs": 3445,
+  "rounds": [
+    {
+      "count": 4,
+      "widths": [
+        168,
+        168,
+        168,
+        168
+      ],
+      "sources": [
+        "http://127.0.0.1:4181/optimized/card/cat/cat-2-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-3-768.webp"
+      ],
+      "decoded": true
+    },
+    {
+      "count": 6,
+      "widths": [
+        168,
+        168,
+        168,
+        168,
+        168,
+        168
+      ],
+      "sources": [
+        "http://127.0.0.1:4181/optimized/card/cat/cat-2-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-3-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-4-768.webp"
+      ],
+      "decoded": true
+    },
+    {
+      "count": 8,
+      "widths": [
+        145,
+        145,
+        145,
+        145,
+        145,
+        145,
+        145,
+        145
+      ],
+      "sources": [
+        "http://127.0.0.1:4181/optimized/card/cat/cat-2-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-3-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-4-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-5-768.webp"
+      ],
+      "decoded": true
+    },
+    {
+      "count": 12,
+      "widths": [
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
+      ],
+      "sources": [
+        "http://127.0.0.1:4181/optimized/card/cat/cat-2-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-3-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-4-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-5-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-6-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-7-768.webp"
+      ],
+      "decoded": true
+    },
+    {
+      "count": 16,
+      "widths": [
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95
+      ],
+      "sources": [
+        "http://127.0.0.1:4181/optimized/card/cat/cat-2-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-3-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-4-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-5-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-6-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-7-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-8-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-9-768.webp"
+      ],
+      "decoded": true
+    },
+    {
+      "count": 20,
+      "widths": [
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95
+      ],
+      "sources": [
+        "http://127.0.0.1:4181/optimized/card/cat/cat-2-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-3-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-4-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-5-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-6-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-7-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-8-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-9-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-10-768.webp",
+        "http://127.0.0.1:4181/optimized/card/cat/cat-1-768.webp"
+      ],
+      "decoded": true
+    }
+  ],
+  "frames": {
+    "count": 150,
+    "p95Ms": 16.799999999999272,
+    "over33Ms": 0
+  },
+  "activeFrames": {
+    "count": 645,
+    "p95Ms": 16.700000000000728,
+    "maxMs": 16.80000000000291,
+    "over33Ms": 0
+  },
+  "imageBytes": 1501030,
+  "images": [
+    {
+      "path": "/optimized/card/cat/cat-celebration-512.webp",
+      "bytes": 62086
+    },
+    {
+      "path": "/optimized/background-941.webp",
+      "bytes": 236812
+    },
+    {
+      "path": "/optimized/hud-round-347.webp",
+      "bytes": 15938
+    },
+    {
+      "path": "/optimized/hud-score-347.webp",
+      "bytes": 14792
+    },
+    {
+      "path": "/optimized/hud-time-347.webp",
+      "bytes": 14398
+    },
+    {
+      "path": "/optimized/sound-button-256.webp",
+      "bytes": 11148
+    },
+    {
+      "path": "/optimized/card/cat-close-768.webp",
+      "bytes": 53362
+    },
+    {
+      "path": "/optimized/card/cat/cat-2-768.webp",
+      "bytes": 61400
+    },
+    {
+      "path": "/optimized/card/cat/cat-3-768.webp",
+      "bytes": 78384
+    },
+    {
+      "path": "/optimized/card/cat/cat-1-768.webp",
+      "bytes": 75216
+    },
+    {
+      "path": "/optimized/card/cat/cat-4-768.webp",
+      "bytes": 62028
+    },
+    {
+      "path": "/optimized/card/cat/cat-5-768.webp",
+      "bytes": 76774
+    },
+    {
+      "path": "/optimized/card/cat/cat-6-768.webp",
+      "bytes": 72084
+    },
+    {
+      "path": "/optimized/card/cat/cat-7-768.webp",
+      "bytes": 75758
+    },
+    {
+      "path": "/optimized/card/cat/cat-8-768.webp",
+      "bytes": 79538
+    },
+    {
+      "path": "/optimized/card/cat/cat-9-768.webp",
+      "bytes": 89586
+    },
+    {
+      "path": "/optimized/card/cat/cat-10-768.webp",
+      "bytes": 82530
+    },
+    {
+      "path": "/optimized/card/cat/golden-cat-768.webp",
+      "bytes": 105202
+    },
+    {
+      "path": "/optimized/ui/golden-alert-panel-1254.webp",
+      "bytes": 121702
+    },
+    {
+      "path": "/optimized/ui/result-panel-1254.webp",
+      "bytes": 112292
+    }
+  ],
+  "failures": []
+}

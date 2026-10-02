@@ -63,6 +63,7 @@ export type GameState = {
   countdownMs: number | null
   firstTurnHintMs: number | null
   selectedCardIds: string[]
+  hasAttemptedPairThisRound: boolean
   pendingResolutionMs: number | null
   transitionRemainingMs: number | null
   countdownTarget: ResumablePhase | null
@@ -180,6 +181,7 @@ export function createGameSession(
     countdownMs: null,
     firstTurnHintMs: null,
     selectedCardIds: [],
+    hasAttemptedPairThisRound: false,
     pendingResolutionMs: null,
     transitionRemainingMs: null,
     countdownTarget: null,
@@ -210,6 +212,7 @@ export function createGameSession(
           countdownMs: config.flow.countdownMs,
           firstTurnHintMs: null,
           selectedCardIds: [],
+          hasAttemptedPairThisRound: false,
           pendingResolutionMs: null,
           transitionRemainingMs: null,
           countdownTarget: 'first-turn-hint',
@@ -260,7 +263,7 @@ export function createGameSession(
           if (remainingMs < config.goldenEvent.minRemainingMs) {
             goldenEventStatus = 'cancelled'
             goldenScheduleMs = null
-          } else if (goldenScheduleMs === 0 && state.selectedCardIds.length === 0) {
+          } else if (goldenScheduleMs === 0 && state.hasAttemptedPairThisRound && state.selectedCardIds.length === 0) {
             goldenCardId = chooseGoldenCardId(state.board, config, random)
             if (goldenCardId) {
               phase = 'golden-alert'
@@ -414,6 +417,7 @@ export function createGameSession(
             round,
             board: createBoard(round, config, random),
             selectedCardIds: [],
+            hasAttemptedPairThisRound: false,
             transitionRemainingMs: null,
             goldenEventStatus,
             goldenScheduleMs: shouldScheduleGolden && goldenEventStatus === 'scheduled' ? getGoldenScheduleDelay(config, random) : state.goldenScheduleMs,
@@ -491,6 +495,7 @@ export function createGameSession(
               score: isMatch
                 ? state.score + config.scoring.matchScore
                 : Math.max(0, state.score - config.scoring.mismatchPenalty),
+              hasAttemptedPairThisRound: true,
               selectedCardIds: isMatch ? [] : selectedCardIds,
               phase: boardIsComplete ? 'transitioning-round' : isMatch ? 'playing' : 'resolving-mismatch',
               pendingResolutionMs: isMatch ? null : config.flow.mismatchRevealMs,

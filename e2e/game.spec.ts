@@ -45,6 +45,18 @@ async function advanceToFinalBoard(page: Page) {
   await expect(page.locator('.board-layout')).toHaveAttribute('data-board-layout', '5x4')
 }
 
+async function attemptFirstPairBeforeGoldenEvent(page: Page) {
+  await page.clock.fastForward(3000)
+  await expect(page.locator('[data-testid="golden-alert"]')).toBeHidden()
+  const cards = page.locator('button.card-button')
+  const [pair] = await cardGroups(page)
+  await cards.nth(pair[0]).click()
+  await page.clock.fastForward(100)
+  await expect(page.locator('[data-testid="golden-alert"]')).toBeHidden()
+  await cards.nth(pair[1]).click()
+  await page.clock.fastForward(100)
+}
+
 async function startGoldenPlaying(page: Page) {
   await page.addInitScript(() => {
     Math.random = () => 0
@@ -54,7 +66,7 @@ async function startGoldenPlaying(page: Page) {
   await expect(page.locator('button.card-button')).toHaveCount(6)
   await completeCurrentBoard(page)
   await expect(page.locator('.board-layout')).toHaveAttribute('data-board-layout', '4x2')
-  await page.clock.fastForward(3000)
+  await attemptFirstPairBeforeGoldenEvent(page)
   await expect(page.locator('[data-testid="golden-alert"]')).toBeVisible()
   await expect(page.getByText('GOLDEN CAT!', { exact: true })).toBeVisible()
   await expect(page.getByText('เปิดแมวทอง แล้วหาคู่ให้ทันใน 5 วินาที!', { exact: true })).toBeVisible()
@@ -87,7 +99,7 @@ async function startGoldenAlert(page: Page) {
   await expect(page.locator('button.card-button')).toHaveCount(6)
   await completeCurrentBoard(page)
   await expect(page.locator('.board-layout')).toHaveAttribute('data-board-layout', '4x2')
-  await page.clock.fastForward(3000)
+  await attemptFirstPairBeforeGoldenEvent(page)
   await expect(page.locator('[data-testid="golden-alert"]')).toBeVisible()
 }
 
@@ -295,7 +307,7 @@ test('announces and locks the Golden Card Event before its Golden Timer begins',
 
   await goldenCard.click()
   await expect(page.locator('button.card-button.is-revealed').filter({ has: page.locator('.golden-cover') })).toHaveCount(0)
-  await expect(page.locator('button.card-button.is-revealed .card-front img')).toHaveCount(1)
+  await expect(page.locator('button.card-button.is-revealed:not(.is-matched) .card-front img')).toHaveCount(1)
 })
 
 test('fits the Golden Card artwork to the card frame', async ({ page }) => {
@@ -317,7 +329,7 @@ test('awards the Golden Match bonus through the visible Board', async ({ page })
   await goldenCard.click()
   await matchingCard.click()
 
-  await expect(page.locator('.hud-score > strong')).toHaveText('65')
+  await expect(page.locator('.hud-score > strong')).toHaveText('75')
   await expect(page.getByText('GOLDEN MATCH!', { exact: true })).toBeVisible()
   await expect(page.getByText('+15 SCORE • +5s', { exact: true })).toBeVisible()
   await expect(page.locator('[data-testid="golden-timer"]')).toBeHidden()
@@ -327,14 +339,14 @@ test('penalizes a failed Golden Card Event without an extra Score loss', async (
   await startGoldenPlaying(page)
   const goldenCard = page.locator('button.card-button[data-golden="true"]')
   const goldenSource = await goldenCard.locator('.card-front img').getAttribute('src')
-  const wrongCard = page.locator('button.card-button:not([data-golden="true"])').filter({ hasNot: page.locator(`.card-front img[src="${goldenSource}"]`) }).first()
+  const wrongCard = page.locator('button.card-button:not(.is-matched):not([data-golden="true"])').filter({ hasNot: page.locator(`.card-front img[src="${goldenSource}"]`) }).first()
 
   await goldenCard.click()
   await wrongCard.click()
 
   await expect(page.getByText('GOLDEN MISSED!', { exact: true })).toBeVisible()
   await expect(page.getByText('-5s', { exact: true })).toBeVisible()
-  await expect(page.locator('.hud-score > strong')).toHaveText('50')
+  await expect(page.locator('.hud-score > strong')).toHaveText('60')
   await page.clock.fastForward(700)
   await expect(page.locator('button.card-button.is-mismatch')).toHaveCount(0)
 })
