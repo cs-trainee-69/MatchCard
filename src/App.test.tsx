@@ -49,6 +49,14 @@ describe('App with an active Game Config', () => {
     act(() => vi.advanceTimersByTime(100))
     act(() => vi.advanceTimersByTime(100))
 
+    expect(screen.queryByTestId('golden-alert')).toBeNull()
+    const cards = [...document.querySelectorAll<HTMLButtonElement>('button.card-button')]
+    const firstImage = cards[0].querySelector('.card-front img')?.getAttribute('src')
+    const matchingCard = cards.slice(1).find((card) => card.querySelector('.card-front img')?.getAttribute('src') === firstImage)!
+    fireEvent.click(cards[0])
+    fireEvent.click(matchingCard)
+    act(() => vi.advanceTimersByTime(100))
+
     expect(screen.getByTestId('golden-alert')).toBeTruthy()
     expect(screen.getByText('เปิดแมวทอง แล้วหาคู่ให้ทันใน 2.5 วินาที!')).toBeTruthy()
     expect(document.querySelector('.board-layout')?.getAttribute('data-board-layout')).toBe('3x2')

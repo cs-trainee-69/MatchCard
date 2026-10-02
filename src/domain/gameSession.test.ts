@@ -35,8 +35,17 @@ function advanceToRoundThree(session: GameSession) {
 
 function startGoldenEvent(session: GameSession) {
   advanceToRoundThree(session)
+  attemptFirstPair(session)
   session.dispatch({ type: 'tick', deltaMs: 3000 })
   session.dispatch({ type: 'tick', deltaMs: 2500 })
+}
+
+function attemptFirstPair(session: GameSession) {
+  const firstCard = session.getState().board[0]
+  const wrongCard = session.getState().board.find((card) => card.character !== firstCard.character)!
+  session.dispatch({ type: 'select-card', cardId: firstCard.id })
+  session.dispatch({ type: 'select-card', cardId: wrongCard.id })
+  session.dispatch({ type: 'tick', deltaMs: 700 })
 }
 
 describe('Board layout', () => {
@@ -413,6 +422,30 @@ describe('Game Session start', () => {
 })
 
 describe('Golden Card Event', () => {
+  it('waits for the first pair attempt of the Round before activating, even after the delay expires', () => {
+    const session = createGameSession({ random: () => 0 })
+    advanceToRoundThree(session)
+
+    session.dispatch({ type: 'tick', deltaMs: 10_000 })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().goldenEventStatus).toBe('scheduled')
+    expect(session.getState().goldenScheduleMs).toBe(0)
+    expect(session.getState().goldenCardId).toBeNull()
+
+    const firstCard = session.getState().board[0]
+    const wrongCard = session.getState().board.find((card) => card.character !== firstCard.character)!
+    session.dispatch({ type: 'select-card', cardId: firstCard.id })
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('playing')
+    session.dispatch({ type: 'select-card', cardId: wrongCard.id })
+    session.dispatch({ type: 'tick', deltaMs: 699 })
+    expect(session.getState().phase).toBe('resolving-mismatch')
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('playing')
+    session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('golden-alert')
+  })
+
   it('honors a custom start Round, the inclusive schedule upper bound, and the exact time threshold', () => {
     const config = createGameConfig({
       rounds: { layouts: [{ rows: 2, columns: 2, cardCount: 4 }] },
@@ -466,6 +499,7 @@ describe('Golden Card Event', () => {
     expect(session.getState().goldenEventStatus).toBe('scheduled')
     expect(session.getState().goldenScheduleMs).toBe(3000)
 
+    attemptFirstPair(session)
     session.dispatch({ type: 'tick', deltaMs: 2999 })
     expect(session.getState().phase).toBe('playing')
     expect(session.getState().goldenEventStatus).toBe('scheduled')
@@ -480,6 +514,7 @@ describe('Golden Card Event', () => {
   it('pauses the main clock during the Alert and then starts a five-second Golden Timer', () => {
     const session = createGameSession({ random: () => 0 })
     advanceToRoundThree(session)
+    attemptFirstPair(session)
     const remainingBeforeAlert = session.getState().remainingMs
 
     session.dispatch({ type: 'tick', deltaMs: 3000 })
@@ -602,6 +637,7 @@ describe('Golden Card Event', () => {
   it('pauses and resumes the Alert without spending Golden or Game Session time', () => {
     const session = createGameSession({ random: () => 0 })
     advanceToRoundThree(session)
+    attemptFirstPair(session)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     const beforePause = session.getState()
 
@@ -627,6 +663,7 @@ describe('Golden Card Event', () => {
     expect(session.getState().goldenEventStatus).toBe('scheduled')
     expect(session.getState().goldenScheduleMs).toBe(3000)
 
+    attemptFirstPair(session)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     expect(session.getState().phase).toBe('golden-alert')
     session.dispatch({ type: 'tick', deltaMs: 2500 })
@@ -673,6 +710,10 @@ describe('Golden Card Event', () => {
     expect(session.getState().goldenScheduleMs).toBe(0)
 
     session.dispatch({ type: 'tick', deltaMs: 1 })
+    expect(session.getState().phase).toBe('playing')
+    expect(session.getState().goldenCardId).toBeNull()
+    attemptFirstPair(session)
+    session.dispatch({ type: 'tick', deltaMs: 1 })
     expect(session.getState().phase).toBe('golden-alert')
     expect(session.getState().goldenCardId).not.toBeNull()
   })
@@ -680,6 +721,7 @@ describe('Golden Card Event', () => {
   it('finishes without an extra Golden penalty when the main clock reaches zero first', () => {
     const session = createGameSession({ config: createGameConfig({ session: { durationMs: 30_000 } }), random: () => 0 })
     advanceToRoundThree(session)
+    attemptFirstPair(session)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     session.dispatch({ type: 'tick', deltaMs: 2500 })
     session.dispatch({ type: 'tick', deltaMs: 30_000 })
@@ -687,12 +729,13 @@ describe('Golden Card Event', () => {
     expect(session.getState().phase).toBe('finished')
     expect(session.getState().remainingMs).toBe(0)
     expect(session.getState().goldenOutcome).toBeNull()
-    expect(session.getState().score).toBe(50)
+    expect(session.getState().score).toBe(49)
   })
 
   it('clamps the failure penalty when the Golden Timer expires near zero', () => {
     const session = createGameSession({ config: createGameConfig({ session: { durationMs: 30_000 } }), random: () => 0 })
     advanceToRoundThree(session)
+    attemptFirstPair(session)
     session.dispatch({ type: 'tick', deltaMs: 3000 })
     session.dispatch({ type: 'tick', deltaMs: 2500 })
     session.dispatch({ type: 'tick', deltaMs: 23_000 })
