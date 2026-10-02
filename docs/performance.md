@@ -53,3 +53,26 @@ Run `pnpm test` and `pnpm e2e` for regression checks. Run `pnpm assets:optimize`
 - Test on a physical midrange phone and a slower network before treating smoothness and loading as complete. Speculative preloading improves readiness but does not gate the game clock on every image completing, so very slow connections can still expose a late image.
 - The background's original resolution is 941 × 1672. A display needing more source pixels will require a higher-resolution original to improve its sharpness.
 - Original and older source art is still copied to the build by the existing public-assets setup. Download savings refer to assets requested by the game, not the total deployment-directory size.
+
+## Gameplay recheck on 2026-10-01
+
+The production build was measured again with the same viewport, density, deterministic randomness, and disabled browser cache. The script now additionally samples a twenty-card Board during one Mismatch followed by nine Matches, allowing 800 ms after each Match for its animation. One pair remains hidden to keep the sample on that Board. This covers flips, Mismatch feedback, Match effects, and score updates; it does not sample Golden Timer or end-of-session warning animations.
+
+| Measurement | Normal CPU | CPU slowed 4× via Chromium |
+| --- | --- | --- |
+| Idle frame interval p95 | 16.8 ms | 16.8 ms |
+| Gameplay frame interval p95 | 16.7 ms | 16.8 ms |
+| Gameplay frame samples | 645 | 586 |
+| Gameplay intervals above 33.4 ms | 0 | 3 (0.51%) |
+| Longest gameplay interval | 16.8 ms | 50.0 ms |
+| Boards with all front images loaded at arrival | 6 of 6 | 6 of 6 |
+| Image response bodies before the gameplay sample | 1,501,030 bytes | 1,501,030 bytes |
+| Browser/request errors | 0 | 0 |
+
+Raw results: [normal CPU](performance-recheck.json), [4× CPU slowdown](performance-recheck-cpu4.json).
+
+These single runs support keeping the current game implementation while collecting a physical-phone profile before another optimization pass. No gameplay or visual code was changed in this recheck. Frame intervals come from `requestAnimationFrame`; they are a scheduling signal, not proof that every frame was presented by a device's display. Chromium CPU throttling does not emulate phone GPU speed, thermal throttling, or a slow mobile network. The occasional delayed frames under throttling do not identify a specific bottleneck.
+
+Recheck validation passed: 59 unit/integration tests, TypeScript validation, production build, 36 browser tests against that production preview, and script syntax validation.
+
+To reproduce, run the existing measurement command against a production preview. Set `PERF_CPU_SLOWDOWN=4` for the throttled scenario (defaults to 1). The output retains the original idle `frames` field and adds `activeFrames` and `cpuSlowdown`. Do not run other browser tests concurrently with the measurement.
