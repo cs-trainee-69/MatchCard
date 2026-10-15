@@ -12,7 +12,7 @@ for (const memberKind of ['guest', 'registered'] as const) {
     await page.clock.runFor(126000)
     await expect(page.getByText(centerMock.eligible ? 'รอบนี้มีสิทธิ์ขึ้นอันดับ' : 'รอบนี้ไม่มีสิทธิ์ขึ้นอันดับ', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'ดูอันดับออนไลน์' }).click()
-    await expect(page.getByRole('dialog')).toContainText('สิทธิ์ขึ้นอันดับของแต่ละรอบเป็นไปตามผลตรวจจาก Game Center')
+    await expect(page.getByRole('dialog')).not.toContainText('สิทธิ์ขึ้นอันดับของแต่ละรอบเป็นไปตามผลตรวจจาก Game Center')
     await expect(page.getByRole('dialog')).not.toContainText('รอบทดลองของ Guest ไม่มีสิทธิ์ขึ้นอันดับ')
   })
 }

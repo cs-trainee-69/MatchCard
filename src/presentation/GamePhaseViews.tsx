@@ -30,8 +30,8 @@ function RoundCelebration({ state }: { state: GameState }) {
 function StartOverlay({ onStart, disabled }: { onStart: () => void; disabled: boolean }) {
   return (
     <div className="overlay overlay-start">
-      <GameImage className="start-cat" src={CELEBRATION_IMAGE} sizes="140px" alt="" aria-hidden="true" />
       <div className="start-floating-copy">
+        <GameImage className="start-cat" src={CELEBRATION_IMAGE} sizes="140px" alt="" aria-hidden="true" />
         <p className="eyebrow">Cat Card</p>
         <p className="start-subtitle" lang="th">จับคู่แมวให้ครบก่อนเวลาหมด</p>
         <button className="start-prompt" type="button" lang="th" onClick={onStart} disabled={disabled}>

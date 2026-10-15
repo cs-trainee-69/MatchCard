@@ -14,7 +14,7 @@
 .gc-ranking-button:focus-visible, .result-replay-button:focus-visible { outline: 3px solid #70435d; outline-offset: 4px; }
 .start-prompt:disabled { opacity: .6; cursor: wait; }
 .gc-submission { display: grid; justify-items: center; gap: 5px; margin-bottom: 6px; }
-.gc-local-note, .gc-ranking-note { font-size: .72rem; opacity: .85; }
+.gc-local-note { font-size: .72rem; opacity: .85; }
 .gc-dialog { width: min(92vw, 440px); max-height: 90dvh; box-sizing: border-box; padding: 20px; overflow: auto; border: 5px solid #f5a0a4; border-radius: 32px; color: #624055; background: radial-gradient(ellipse at top, #fffef4, #fff0e4); box-shadow: inset 0 0 0 2px #ffe7d9, 0 5px 0 #c96f83, 0 22px 60px #240e2866; }
 .gc-dialog::backdrop { background: #170a13bf; backdrop-filter: blur(4px); }
 .gc-dialog-header { position: relative; text-align: center; padding: 0 0 6px; }
@@ -53,7 +53,6 @@
 .gc-empty p { margin: 0; }
 .gc-empty > span { color: #87636e; font-size: .72rem; font-weight: 500; }
 .gc-empty-paw { width: 38px; height: 38px; fill: #e5ae83; }
-.gc-ranking-note { margin: 14px 0 0; padding-top: 12px; border-top: 1px dashed #e8beac; color: #825965; font-size: .65rem; line-height: 1.8; opacity: 1; }
 .gc-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 @media (max-height: 600px) { .gc-panel { bottom: 38px; max-height: 22dvh; font-size: .65rem; } .gc-dialog { padding: 12px; border-radius: 25px; } .gc-header-mascot { width: 68px; height: 68px; } .gc-empty { padding-block: 15px; } }
 .gc-development-label { position: fixed; z-index: 10; bottom: 8px; left: 8px; max-width: calc(100vw - 72px); padding: 5px 9px; border-radius: 8px; background: #2b1723ed; color: #ffe3af; font-size: .65rem; pointer-events: none; }
