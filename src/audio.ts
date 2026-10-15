@@ -45,6 +45,17 @@ const SOUND_CONFIG: Record<SoundName, { frequency: number; duration: number; typ
 let matchVariant = 0
 let delayedRoundCompleteTimeouts: number[] = []
 
+// Called directly from Start's user gesture, before awaiting the online round.
+export function unlockAudio(enabled: boolean): void {
+  if (!enabled) return
+  try {
+    const context = getAudioContext()
+    if (context?.state === 'suspended') void context.resume().catch(() => {})
+  } catch {
+    // Audio support must not prevent an otherwise valid online round.
+  }
+}
+
 export function cancelDelayedSounds(): void {
   delayedRoundCompleteTimeouts.forEach((timeout) => window.clearTimeout(timeout))
   delayedRoundCompleteTimeouts = []

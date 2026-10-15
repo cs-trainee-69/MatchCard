@@ -5,7 +5,11 @@ import App from '../App'
 import { createGameConfig } from '../domain/gameConfig'
 
 const registrations = vi.hoisted(() => vi.fn())
-vi.mock('../audio', () => ({ cancelDelayedSounds: vi.fn(), playSound: vi.fn() }))
+vi.mock('../audio', () => ({ cancelDelayedSounds: vi.fn(), playSound: vi.fn(), unlockAudio: vi.fn() }))
+vi.mock('../integration/useGameCenter', () => ({ useGameCenter: () => ({
+  access: 'ready', starting: false, error: null, submissions: [],
+  start: (activate: () => void) => activate(), retry: vi.fn(), signIn: vi.fn(),
+}) }))
 vi.mock('../feedback/useGameFeedback', async (importOriginal) => {
   const original = await importOriginal<typeof import('../feedback/useGameFeedback')>()
   const { useCallback } = await import('react')

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 for (const viewport of [
   { width: 393, height: 852 },
@@ -18,9 +18,9 @@ for (const viewport of [
   })
 }
 
-test('serves sharp, optimized images on a high-density display and after rotation', async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3 })
-  const page = await context.newPage()
+test.describe('high-density artwork', () => {
+test.use({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3 })
+test('serves sharp, optimized images on a high-density display and after rotation', async ({ page }) => {
   const failures: string[] = []
   page.on('response', (response) => { if (response.status() >= 400) failures.push(response.url()) })
   await page.goto('/')
@@ -38,7 +38,7 @@ test('serves sharp, optimized images on a high-density display and after rotatio
     }))).toBe(true)
   }
   expect(failures).toEqual([])
-  await context.close()
+})
 })
 
 test('falls back to original card artwork when an optimized image cannot load', async ({ page }) => {

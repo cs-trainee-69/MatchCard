@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { unlockAudio } from '../audio'
 import type { GameConfig } from '../domain/gameConfig'
 import { MatchEffectLayer } from '../feedback/MatchEffectLayer'
 import { useGameFeedback } from '../feedback/useGameFeedback'
@@ -8,6 +10,8 @@ import { Hud } from './Hud'
 import { useReducedMotion } from './useReducedMotion'
 import { useGameSessionRuntime } from '../runtime/useGameSessionRuntime'
 import { useSoundPreference } from '../runtime/useSoundPreference'
+import { useGameCenter } from '../integration/useGameCenter'
+import { LeaderboardDialog, SubmissionStatus } from './GameCenterViews'
 
 export type GameScreenProps = {
   config?: GameConfig
@@ -15,6 +19,8 @@ export type GameScreenProps = {
 
 export default function GameScreen({ config: requestedConfig }: GameScreenProps = {}) {
   const runtime = useGameSessionRuntime(requestedConfig)
+  const center = useGameCenter(runtime.session, runtime.state)
+  const [rankingOpen, setRankingOpen] = useState(false)
   const { soundEnabled, toggleSound } = useSoundPreference()
   const prefersReducedMotion = useReducedMotion()
   const feedback = useGameFeedback({
@@ -24,6 +30,14 @@ export default function GameScreen({ config: requestedConfig }: GameScreenProps 
     soundEnabled,
     dispatch: runtime.dispatch,
   })
+  const centerPanel = <aside className="gc-panel" aria-label="Game Center">
+    {center.access === 'connecting' && <p role="status">กำลังตรวจสิทธิ์เข้าเกม…</p>}
+    {center.starting && <p role="status">กำลังเริ่มรอบออนไลน์…</p>}
+    {center.error && <div role="alert"><p>{center.error}</p><button type="button" className="gc-button" onClick={center.signIn}>เข้าสู่ระบบใหม่</button></div>}
+    {center.submissions.filter((item, index) => index === center.submissions.length - 1 || item.status === 'error' || item.status === 'sending').map(item => <SubmissionStatus key={item.id} submission={item} retry={center.retry} />)}
+    {runtime.state.phase === 'finished' && <p className="gc-local-note">High Score เป็นสถิติในอุปกรณ์นี้</p>}
+    <button type="button" className="gc-button" onClick={() => setRankingOpen(true)}>ดูอันดับออนไลน์</button>
+  </aside>
 
   return (
     <main className="app-shell">
@@ -58,10 +72,14 @@ export default function GameScreen({ config: requestedConfig }: GameScreenProps 
             state={runtime.state}
             config={runtime.config}
             startingHighScore={runtime.startingHighScore}
-            onStart={feedback.onStart}
+            onStart={() => { unlockAudio(soundEnabled); void center.start(feedback.onStart) }}
+            startDisabled={center.access !== 'ready' || center.starting}
             onResume={() => runtime.dispatch({ type: 'resume' })}
             onReplay={runtime.replay}
+            resultFooter={centerPanel}
           />
+          {runtime.state.phase === 'ready' && centerPanel}
+          {rankingOpen && <LeaderboardDialog onClose={() => setRankingOpen(false)} />}
           {feedback.matchEffect && <MatchEffectLayer effect={feedback.matchEffect} reducedMotion={prefersReducedMotion} />}
         </div>
       </section>

@@ -4,6 +4,7 @@ import { PawIcon } from './PawIcon'
 import { getWarningLevel } from './warning'
 import { CELEBRATION_IMAGE, GOLDEN_IMAGE } from './gameImages'
 import { GameImage } from './GameImage'
+import type { ReactNode } from 'react'
 
 function RoundCelebration({ state }: { state: GameState }) {
   return (
@@ -26,14 +27,14 @@ function RoundCelebration({ state }: { state: GameState }) {
   )
 }
 
-function StartOverlay({ onStart }: { onStart: () => void }) {
+function StartOverlay({ onStart, disabled }: { onStart: () => void; disabled: boolean }) {
   return (
     <div className="overlay overlay-start">
       <GameImage className="start-cat" src={CELEBRATION_IMAGE} sizes="140px" alt="" aria-hidden="true" />
       <div className="start-floating-copy">
         <p className="eyebrow">Cat Card</p>
         <p className="start-subtitle" lang="th">จับคู่แมวให้ครบก่อนเวลาหมด</p>
-        <button className="start-prompt" type="button" lang="th" onClick={onStart}>
+        <button className="start-prompt" type="button" lang="th" onClick={onStart} disabled={disabled}>
           แตะเพื่อเริ่ม
         </button>
       </div>
@@ -85,7 +86,7 @@ function PauseOverlay({ onResume }: { onResume: () => void }) {
   )
 }
 
-function ResultOverlay({ state, isNewHighScore, onReplay }: { state: GameState; isNewHighScore: boolean; onReplay: () => void }) {
+function ResultOverlay({ state, isNewHighScore, onReplay, footer }: { state: GameState; isNewHighScore: boolean; onReplay: () => void; footer: ReactNode }) {
   return (
     <div className="overlay overlay-result" data-testid="result-overlay">
       <div className="overlay-card result-card">
@@ -119,6 +120,7 @@ function ResultOverlay({ state, isNewHighScore, onReplay }: { state: GameState; 
           </button>
         </div>
       </div>
+      {footer}
     </div>
   )
 }
@@ -132,23 +134,25 @@ export type GamePhaseViewsProps = {
   config: GameConfig
   startingHighScore: number
   onStart: () => void
+  startDisabled: boolean
+  resultFooter: ReactNode
   onResume: () => void
   onReplay: () => void
 }
 
-export function GamePhaseViews({ state, config, startingHighScore, onStart, onResume, onReplay }: GamePhaseViewsProps) {
+export function GamePhaseViews({ state, config, startingHighScore, onStart, startDisabled, onResume, onReplay, resultFooter }: GamePhaseViewsProps) {
   const warningLevel = getWarningLevel(state)
 
   return (
     <>
-      {state.phase === 'ready' && <StartOverlay onStart={onStart} />}
+      {state.phase === 'ready' && <StartOverlay onStart={onStart} disabled={startDisabled} />}
       {state.phase === 'countdown' && <CountdownOverlay countdownMs={state.countdownMs} />}
       {state.phase === 'first-turn-hint' && <FirstTurnHintOverlay />}
       {state.phase === 'golden-alert' && <GoldenAlertOverlay timerMs={config.goldenEvent.timerMs} />}
       {state.phase === 'paused' && <PauseOverlay onResume={onResume} />}
       {warningLevel !== 'none' && <UrgencyVignette level={warningLevel} />}
       {state.phase === 'transitioning-round' && <RoundCelebration state={state} />}
-      {state.phase === 'finished' && <ResultOverlay state={state} isNewHighScore={state.score > startingHighScore} onReplay={onReplay} />}
+      {state.phase === 'finished' && <ResultOverlay state={state} isNewHighScore={state.score > startingHighScore} onReplay={onReplay} footer={resultFooter} />}
     </>
   )
 }
