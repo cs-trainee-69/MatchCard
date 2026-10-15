@@ -184,8 +184,15 @@ pnpm e2e --workers=4
 E2E ใช้ fixture intercept ทุก request ไป Game Center รวม grant, replay, result และ leaderboard
 และอนุญาต baseURL เฉพาะ localhost/127.0.0.1 ไม่ใช้ production เป็นเป้าหมาย
 ไม่มี bypass flag หรือคะแนนตัวอย่างอยู่ใน production code
-เมื่อเปิด `pnpm dev` โดยไม่มี grant จริง เกมจะ redirect ตามขั้นตอนล็อกอินปกติ
-หากต้องการตรวจ UI อย่างปลอดภัย ให้ใช้ชุด E2E พร้อม fixture แทนการสร้าง session จริง
+เมื่อเปิด `npm run dev` (หรือ `pnpm dev`) บน localhost/127.0.0.1 จะใช้ตัวเชื่อมจำลอง
+เล่นเองได้โดยไม่ใช้ grant และไม่เรียก Game Center จริง มีป้ายโหมดพัฒนากำกับ
+อันดับในโหมดนี้แสดงว่างและระบุว่าไม่โหลดข้อมูลจริง ผลจบเกมระบุว่าเป็นผลทดสอบในเครื่อง
+ตัวเชื่อมจำลองถูกเปิดเฉพาะ Vite development server และถูกตัดออกจาก build/preview
+ใช้ `npm run e2e:local` ตรวจการเล่นในโหมดนี้ ส่วนชุด integration เดิมรัน Vite mode test
+เพื่อทดสอบ SDK จริงกับ API fixture ไม่ใช่ตัวเชื่อมจำลองของโหมดพัฒนา
+หลังเพิ่มโหมดพัฒนา: build/TypeScript และ unit/component 70 กรณีผ่าน,
+E2E local 1 กรณีและ integration 15 กรณีผ่าน ตรวจ bundle แล้วไม่มีโค้ด/ข้อความตัวเชื่อมจำลอง
+และยังมี grant/beginRound สำหรับ production
 
 ผลตรวจในเครื่องวันที่ 15 ตุลาคม 2026: TypeScript/production build ผ่าน,
 unit/component tests ผ่าน 70 กรณี และ browser E2E ผ่าน 48 กรณี

@@ -117,6 +117,7 @@ for (const count of [0, 1, 5]) {
     }))
     await page.goto('/')
     const opener = page.getByRole('button', { name: 'ดูอันดับออนไลน์' })
+    if (count === 0) await page.screenshot({ path: test.info().outputPath('ranking-button.png') })
     await opener.click()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
@@ -129,7 +130,7 @@ for (const count of [0, 1, 5]) {
     } else await expect(dialog).toContainText('ยังไม่มีคะแนน')
     await expect(dialog).toContainText('19 ต.ค.')
     expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
-    if (count === 5) await page.screenshot({ path: test.info().outputPath('ranking-mobile.png') })
+    await page.screenshot({ path: test.info().outputPath(count === 5 ? 'ranking-mobile.png' : `ranking-${count}-rows.png`) })
     await page.keyboard.press('Escape')
     await expect(dialog).toHaveCount(0)
     await expect(opener).toBeFocused()
@@ -141,6 +142,7 @@ test('ranking errors retry and reopen cleanly', async ({ page, centerMock }) => 
   await page.goto('/')
   await page.getByRole('button', { name: 'ดูอันดับออนไลน์' }).click()
   await expect(page.getByRole('alert')).toContainText('โหลดอันดับไม่สำเร็จ')
+  await page.screenshot({ path: test.info().outputPath('ranking-error.png') })
   centerMock.failRanking = false
   await page.getByRole('button', { name: 'ลองโหลดอีกครั้ง' }).click()
   await expect(page.getByRole('dialog')).toContainText('ยังไม่มีคะแนน')
@@ -208,12 +210,13 @@ test('five-row ranking fits short mobile and desktop viewports', async ({ page, 
     rank: index + 1, score: '100', avatar: { url: '', label: '' },
   }))
   await page.goto('/')
-  for (const viewport of [{ width: 320, height: 480 }, { width: 1280, height: 720 }]) {
+  for (const viewport of [{ width: 320, height: 480 }, { width: 390, height: 844 }, { width: 1280, height: 720 }]) {
     await page.setViewportSize(viewport)
     await page.getByRole('button', { name: 'ดูอันดับออนไลน์' }).click()
     const dialog = page.getByRole('dialog')
     await expect(dialog.locator('tbody tr')).toHaveCount(5)
     expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    await page.screenshot({ path: test.info().outputPath(`leaderboard-${viewport.width}x${viewport.height}.png`) })
     await page.getByRole('button', { name: 'ปิดอันดับ' }).click()
     await expect(dialog).toHaveCount(0)
   }

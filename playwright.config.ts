@@ -28,7 +28,7 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port ${e2ePort} --strictPort`,
+          command: `node node_modules/vite/bin/vite.js --mode test --host 127.0.0.1 --port ${e2ePort} --strictPort`,
           url: localBaseUrl,
           reuseExistingServer: !process.env.CI,
         },

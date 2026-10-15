@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { unlockAudio } from '../audio'
+import { LOCAL_GAME_CENTER } from '../integration/gameCenter'
 import type { GameConfig } from '../domain/gameConfig'
 import { MatchEffectLayer } from '../feedback/MatchEffectLayer'
 import { useGameFeedback } from '../feedback/useGameFeedback'
@@ -42,6 +43,7 @@ export default function GameScreen({ config: requestedConfig }: GameScreenProps 
 
   return (
     <main className="app-shell">
+      {LOCAL_GAME_CENTER && <div className="gc-development-label">โหมดพัฒนา · เล่นในเครื่อง ไม่ส่งคะแนนจริง</div>}
       <section
         ref={feedback.frameRef}
         className={`game-frame ${prefersReducedMotion ? 'prefers-reduced-motion' : ''}`}
