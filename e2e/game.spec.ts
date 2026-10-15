@@ -1,4 +1,5 @@
-import { expect, type Page, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 async function startPlaying(page: Page) {
   await page.clock.install()
@@ -385,7 +386,7 @@ for (const viewport of [
   })
 }
 
-test('pauses the Golden Alert and active Golden Timer on document visibility changes', async ({ page }) => {
+test('pauses the Golden Alert and active Golden Timer on document visibility changes', async ({ page, centerMock }) => {
   await startGoldenAlert(page)
   const alertTime = await page.locator('.hud-time > strong').textContent()
 
@@ -420,6 +421,7 @@ test('pauses the Golden Alert and active Golden Timer on document visibility cha
   })
   await expect(page.locator('.countdown-number')).toBeVisible()
   await expect(goldenTimer.locator('strong')).toHaveText(timerBeforePause ?? '')
+  expect(centerMock.starts).toBe(1)
 })
 
 test('celebrates a Match without blocking the next legal selection', async ({ page }) => {
@@ -479,7 +481,7 @@ test('keeps outcome feedback available with reduced motion enabled', async ({ pa
   await expect(page.locator('.feedback-match')).toBeVisible()
 })
 
-test('advances from the first Board to the six-card Round', async ({ page }) => {
+test('advances from the first Board to the six-card Round', async ({ page, centerMock }) => {
   await startPlaying(page)
   const cards = page.locator('button.card-button')
   const groups = await cardGroups(page)
@@ -497,6 +499,7 @@ test('advances from the first Board to the six-card Round', async ({ page }) => 
   await page.clock.fastForward(800)
   await expect(cards).toHaveCount(6)
   await expect(page.locator('.board-layout')).toHaveAttribute('data-board-layout', '3x2')
+  expect(centerMock.starts).toBe(1)
 })
 
 test('keeps every planned Board layout usable through Round 6', async ({ page }) => {

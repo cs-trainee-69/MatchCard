@@ -11,6 +11,7 @@ import './styles/feedback.css'
 import './styles/animations.css'
 import './styles/motion.css'
 import './styles/responsive.css'
+import './styles/game-center.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,7 +1,7 @@
 {
   "name": "cat-card",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,7 @@
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
+    "e2e": "node node_modules/@playwright/test/cli.js test",
     "preview": "vite preview",
     "perf:measure": "node scripts/measure-performance.mjs",
     "assets:optimize": "python scripts/optimize-images.py"

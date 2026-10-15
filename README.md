@@ -2,6 +2,16 @@
 
 เกมจับคู่ไพ่ตัวละครแมวแบบจับเวลา ผู้เล่นจะเปิดไพ่เพื่อหา Match สะสม Score และผ่าน Round ที่ยากขึ้นเรื่อย ๆ ก่อนหมดเวลา
 
+## Game Center
+
+เกมเชื่อมรายการเดิม `cat-card` ด้วย SDK ส่วนกลาง ต้องเข้าสู่ระบบผ่าน Game Center ก่อนเริ่มเล่น
+หนึ่ง Game Session นับหนึ่ง playable session; เมื่อหมดเวลาส่ง Score สุดท้าย และอ่าน Top 5 ออนไลน์แยกจาก High Score ในอุปกรณ์
+สถานะการเปิดรับรอบและอันดับบน CMS ยังรอผู้ดูแลดำเนินการ ดู [ขั้นตอนส่งต่อผู้ดูแล](docs/game-center-handoff.md)
+สำหรับค่าที่ต้องตั้งและการตรวจหลังเผยแพร่
+
+ชุด E2E จำลอง Game Center และใช้เฉพาะเกมบน localhost/127.0.0.1 ไม่สร้างรอบบน production
+การเปิดหน้า dev ตรง ๆ โดยไม่มี grant จะ redirect ไปเข้าสู่ระบบตามปกติ
+
 ## สิ่งที่ต้องมี
 
 - Node.js 22 ขึ้นไป
@@ -79,7 +89,7 @@ E2E_BASE_URL=http://127.0.0.1:5173
 | --- | ---: | --- |
 | `PORT` | `5173` | พอร์ตของ Vite dev/preview และพอร์ตฝั่งเครื่องเมื่อใช้ Docker |
 | `E2E_PORT` | `4173` | พอร์ต server ที่ Playwright เปิดเพื่อรัน E2E ในเครื่อง |
-| `E2E_BASE_URL` | ว่าง | URL ของ deployment ที่มี server รันอยู่แล้วสำหรับ Playwright |
+| `E2E_BASE_URL` | ว่าง | URL ของ server ในเครื่องที่รันอยู่แล้วสำหรับ Playwright (localhost/127.0.0.1) |
 | `PERF_URL` | `http://127.0.0.1:${PORT}` | URL เป้าหมายของ performance measurement |
 | `PERF_SCREENSHOT` | ว่าง | path สำหรับบันทึก screenshot ระหว่างวัด performance |
 
@@ -92,7 +102,7 @@ PORT=5180
 # ให้ Playwright ใช้พอร์ตแยกจาก Vite dev server
 E2E_PORT=5181
 
-# ใช้เมื่อมี deployment รันอยู่แล้ว และไม่ต้องการให้ Playwright เปิด Vite ใหม่
+# ใช้เมื่อมี server ในเครื่องรันอยู่แล้ว และไม่ต้องการให้ Playwright เปิด Vite ใหม่
 E2E_BASE_URL=http://127.0.0.1:5180
 
 # ใช้เมื่อวัด server คนละตัวกับ PORT
