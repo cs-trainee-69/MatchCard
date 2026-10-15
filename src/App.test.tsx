@@ -6,7 +6,12 @@ import { cancelDelayedSounds, playSound } from './audio'
 import App from './App'
 import { createGameConfig } from './domain/gameConfig'
 
-vi.mock('./audio', () => ({ cancelDelayedSounds: vi.fn(), playSound: vi.fn() }))
+vi.mock('./audio', () => ({ cancelDelayedSounds: vi.fn(), playSound: vi.fn(), unlockAudio: vi.fn() }))
+// Existing gameplay tests stay isolated from authentication and the real network.
+vi.mock('./integration/useGameCenter', () => ({ useGameCenter: () => ({
+  access: 'ready', starting: false, error: null, submissions: [],
+  start: (activate: () => void) => activate(), retry: vi.fn(), signIn: vi.fn(),
+}) }))
 
 describe('App with an active Game Config', () => {
   beforeEach(() => {
