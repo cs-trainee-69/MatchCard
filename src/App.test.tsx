@@ -162,7 +162,7 @@ describe('App with an active Game Config', () => {
     expect(screen.getByText('MATCH!', { exact: true })).toBeTruthy()
 
     act(() => vi.advanceTimersByTime(100))
-    fireEvent.click(screen.getByRole('button', { name: 'Play again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'เล่นอีกครั้ง' }))
 
     expect(screen.getByRole('button', { name: 'แตะเพื่อเริ่ม' })).toBeTruthy()
     expect(screen.queryByText('MATCH!', { exact: true })).toBeNull()

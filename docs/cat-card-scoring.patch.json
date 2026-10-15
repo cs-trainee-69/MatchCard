@@ -1,0 +1,6 @@
+{
+  "enabled": true,
+  "reviewRequired": false,
+  "allowClientRanking": true,
+  "rankingOutcomes": ["complete"]
+}

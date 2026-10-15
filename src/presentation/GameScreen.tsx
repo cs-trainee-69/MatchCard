@@ -11,7 +11,7 @@ import { useReducedMotion } from './useReducedMotion'
 import { useGameSessionRuntime } from '../runtime/useGameSessionRuntime'
 import { useSoundPreference } from '../runtime/useSoundPreference'
 import { useGameCenter } from '../integration/useGameCenter'
-import { LeaderboardDialog, SubmissionStatus } from './GameCenterViews'
+import { LeaderboardDialog, RankingButton, SubmissionStatus } from './GameCenterViews'
 
 export type GameScreenProps = {
   config?: GameConfig
@@ -30,13 +30,14 @@ export default function GameScreen({ config: requestedConfig }: GameScreenProps 
     soundEnabled,
     dispatch: runtime.dispatch,
   })
+  const submissionStatus = center.submissions.filter((item, index) => index === center.submissions.length - 1 || item.status === 'error' || item.status === 'sending').map(item => <SubmissionStatus key={item.id} submission={item} retry={center.retry} />)
+  const rankingButton = <RankingButton onClick={() => setRankingOpen(true)} />
   const centerPanel = <aside className="gc-panel" aria-label="Game Center">
     {center.access === 'connecting' && <p role="status">กำลังตรวจสิทธิ์เข้าเกม…</p>}
     {center.starting && <p role="status">กำลังเริ่มรอบออนไลน์…</p>}
     {center.error && <div role="alert"><p>{center.error}</p><button type="button" className="gc-button" onClick={center.signIn}>เข้าสู่ระบบใหม่</button></div>}
-    {center.submissions.filter((item, index) => index === center.submissions.length - 1 || item.status === 'error' || item.status === 'sending').map(item => <SubmissionStatus key={item.id} submission={item} retry={center.retry} />)}
-    {runtime.state.phase === 'finished' && <p className="gc-local-note">High Score เป็นสถิติในอุปกรณ์นี้</p>}
-    <button type="button" className="gc-button" onClick={() => setRankingOpen(true)}>ดูอันดับออนไลน์</button>
+    {submissionStatus}
+    {rankingButton}
   </aside>
 
   return (
@@ -76,7 +77,11 @@ export default function GameScreen({ config: requestedConfig }: GameScreenProps 
             startDisabled={center.access !== 'ready' || center.starting}
             onResume={() => runtime.dispatch({ type: 'resume' })}
             onReplay={runtime.replay}
-            resultFooter={centerPanel}
+            resultStatus={submissionStatus}
+            resultFooter={<aside className="result-center" aria-label="Game Center">
+              {rankingButton}
+              <p className="gc-local-note">High Score เป็นสถิติในอุปกรณ์นี้</p>
+            </aside>}
           />
           {runtime.state.phase === 'ready' && centerPanel}
           {rankingOpen && <LeaderboardDialog onClose={() => setRankingOpen(false)} />}

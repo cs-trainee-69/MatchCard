@@ -1,0 +1,68 @@
+{
+  "checkedAtUtc": "2026-10-15T07:36:57.6882060+00:00",
+  "gameId": "cat-card",
+  "playConfig": {
+    "url": "https://center.game.gamification.in.th/api/v1/games/cat-card/play-config",
+    "data": {
+      "modes": [
+        "default"
+      ],
+      "enabled": true,
+      "maxScore": "1000000",
+      "maxStars": 3,
+      "minScore": "0",
+      "revision": 2,
+      "timezone": "Asia/Bangkok",
+      "direction": "desc",
+      "modeRules": {},
+      "eventTypes": [],
+      "statsSchema": {},
+      "gameVersions": [
+        "1.0.0"
+      ],
+      "maxDurationMs": 21600000,
+      "minDurationMs": 0,
+      "reviewRequired": false,
+      "starThresholds": [],
+      "rankingOutcomes": [
+        "win",
+        "lose",
+        "complete",
+        "quit"
+      ],
+      "allowClientRanking": true
+    }
+  },
+  "leaderboard": {
+    "url": "https://center.game.gamification.in.th/api/v1/games/cat-card/leaderboards/current/entries?mode=default&limit=5",
+    "entryCount": 0,
+    "rulesRevision": 2,
+    "periodGuestEligible": true
+  },
+  "productionBundle": {
+    "url": "https://cat-card.game.gamification.in.th/assets/index-D0qo3-QE.js",
+    "contentType": "application/javascript",
+    "containsGrant": true,
+    "containsBeginRound": true,
+    "containsLeaderboard": true
+  },
+  "cors": {
+    "method": "OPTIONS",
+    "requestOrigin": "https://cat-card.game.gamification.in.th",
+    "requestedMethod": "POST",
+    "allowedOrigin": "https://cat-card.game.gamification.in.th",
+    "allowedHeaders": "Authorization, Content-Type, Idempotency-Key, X-CSRF-Token"
+  },
+  "scoringPatch": {
+    "file": "docs/cat-card-scoring.patch.json",
+    "validJson": true,
+    "fieldsExistInLiveSchema": true,
+    "appliedByThisAudit": false
+  },
+  "unresolved": [
+    "Live meta.period.guestEligible=true conflicts with ranking.md and current Guest copy. Confirm policy with Game Center maintainer.",
+    "Live rankingOutcomes includes win/lose/complete/quit; proposed patch narrows it to complete.",
+    "No real production round, receipt, registered ranking, or CMS count verification was performed."
+  ],
+  "productionRoundsCreatedByThisAudit": 0
+}

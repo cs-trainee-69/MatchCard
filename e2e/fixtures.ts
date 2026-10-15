@@ -11,6 +11,7 @@ export type CenterMock = {
   rows: Record<string, unknown>[]
   resultStatus: string
   eligible: boolean
+  memberKind?: 'guest' | 'registered'
   startDelayMs: number
 }
 
@@ -38,7 +39,7 @@ export const test = base.extend<{ centerMock: CenterMock }>({
         playSessionId: id, playToken: `fixture-play-${id}`, replayToken: `fixture-replay-${id}`,
         expiresAt: new Date(Date.now() + 3600000).toISOString(),
         replayTokenExpiresAt: new Date(Date.now() + 21600000).toISOString(),
-        context: { mode: 'default', rankingPeriodId: 'fixture-period', memberKindAtStart: state.eligible ? 'registered' : 'guest' }, statsSchema: {},
+        context: { mode: 'default', rankingPeriodId: 'fixture-period', memberKindAtStart: state.memberKind ?? (state.eligible ? 'registered' : 'guest') }, statsSchema: {},
       })
       if (request.method() === 'OPTIONS') return route.fulfill({ status: 204 })
       if (url.pathname.endsWith('/play-config')) return json({ data: { enabled: true, gameVersions: ['1.0.0'], modes: ['default'], direction: 'desc' } })

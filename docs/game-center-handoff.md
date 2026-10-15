@@ -2,9 +2,42 @@
 
 วันที่ตรวจข้อมูล: 15 ตุลาคม 2026 (Asia/Bangkok)
 
-**สถานะ CMS: รอผู้ดูแลดำเนินการ** ผู้ใช้ไม่มีสิทธิ์ CMS จึงไม่มีการบันทึกค่ากลางในงานนี้
-โค้ดเตรียมสำหรับทดสอบในเครื่องและตรวจทาน ยังไม่มีการ stage, commit, push หรือ deploy
-และไม่มีการเริ่มรอบหรือส่งผลทดสอบบน production
+**สถานะล่าสุดจากการตรวจซ้ำ 15 ตุลาคม 2026:** ค่าหลักของ Game API พร้อมแล้ว และเว็บจริงมีโค้ด integration
+การตรวจครั้งนี้อ่านข้อมูลสาธารณะเท่านั้น ไม่มีการบันทึก CMS หรือเริ่มรอบ/ส่งผลบน production
+ข้อความและตาราง “ก่อนทำงาน” ด้านล่างเป็นประวัติการตรวจครั้งแรก ไม่ใช่สถานะปัจจุบัน
+
+## ผลตรวจซ้ำและสิ่งที่ยังค้าง
+
+หลักฐานอ่านกลับล่าสุด: [cat-card-game-center-verification.json](cat-card-game-center-verification.json)
+ไฟล์นี้เป็นบันทึกการตรวจสอบ ไม่ใช่ request body หรือนำเข้า CMS
+
+| ส่วน | สถานะที่ตรวจซ้ำได้ |
+| --- | --- |
+| เปิดรับรอบ/คะแนน | `enabled=true`, revision 2 |
+| นโยบายผล | `reviewRequired=false`, `allowClientRanking=true` |
+| รุ่น/โหมด/ทิศทาง | `1.0.0` / `default` / `desc` ตรงกับโค้ด |
+| อันดับ | HTTP สำเร็จ, `data: []` ไม่ได้ตอบ board_not_found แล้ว |
+| เว็บจริง | โหลด `/assets/index-D0qo3-QE.js` และพบ grant, beginRound และ leaderboard ใน bundle |
+| Git ในเครื่อง | พบ commit `21623db` (add stats and leaderboard.) และยังมีงานแก้หน้าผลเกมที่ไม่ commit |
+
+สิ่งที่ต้องดำเนินการต่อ:
+
+1. **ยืนยันนโยบาย Guest กับทีม Game Center:** API ส่ง `meta.period.guestEligible=true`
+   แต่ `/docs/ranking.md` ระบุ Guest ไม่ขึ้นอันดับ จึงยังสรุปนโยบายจริงไม่ได้
+   แก้ข้อความเกมในเครื่องให้เป็นกลางแล้ว โดยยึด `status` และ `rankingEligible` จาก receipt ของแต่ละรอบ
+   ไม่อนุมานสิทธิ์จากประเภท Guest/สมาชิก และไม่เปลี่ยน global period หรือทดสอบด้วยคะแนนปลอม
+   ทีม Game Center ยังต้องยืนยันความต่างระหว่างเอกสารกับ API; การแก้ข้อความนี้ยังไม่ได้เผยแพร่ในงานนี้
+2. **ตรวจความต่างของ JSON ก่อนใช้:** ค่าหลัก 3 ช่องใน `cat-card-scoring.patch.json` ตรงกับระบบแล้ว
+   ส่วน `rankingOutcomes` ปัจจุบันยังเป็น `["win","lose","complete","quit"]`
+   แต่ไฟล์เสนอ `["complete"]` การจำกัดให้เหลือ complete เป็นข้อเสนอให้ตรงกับเกม ไม่ใช่เงื่อนไขที่บล็อกผล complete ปัจจุบัน
+   ไม่ต้องส่ง patch ซ้ำเพียงเพื่อเปิดระบบที่เปิดแล้ว
+3. **ทดสอบ acceptance จริงเมื่อได้รับอนุญาตแยก:** ยังไม่มีหลักฐาน Start เพิ่มยอด CMS,
+   ผลจริงได้รับ receipt หรือสมาชิกที่มีสิทธิ์ปรากฏในอันดับ การอ่านอันดับว่างยืนยันเฉพาะ endpoint ทำงาน
+4. **แยกรุ่นที่ออนไลน์ออกจากงานในเครื่อง:** เว็บจริงมี integration รุ่นที่ตรวจพบแล้ว
+   แต่ไม่ได้ยืนยันว่างานปรับหน้าผลเกมล่าสุดใน working tree ถูกเผยแพร่ และไม่ได้ระบุ commit ฝั่ง deployment จาก bundle เพียงอย่างเดียว
+
+ไฟล์ JSON สำหรับส่งค่าคือ `cat-card-scoring.patch.json` ซึ่งมีเฉพาะ property ของ ScoringRules
+จึงไม่ใส่ gameId หรือ URL ใน body; เป้าหมาย `cat-card` อยู่ใน path ของ endpoint ตามหัวข้อ 3
 
 ## 1. รายการเกมเดิมและหลักฐานที่ตรวจได้
 
@@ -81,6 +114,11 @@ Preflight จาก production origin ตอบ `Access-Control-Allow-Origin: ht
 OpenAPI ระบุ `PATCH /api/v1/admin/games/cat-card/scoring` โดยใช้สิทธิ์ CMS เท่านั้น
 ค่าที่ตั้งใจเปลี่ยนมีเพียงชุดนี้ (ตรวจ semantics ของ PATCH และสำรองค่าปัจจุบันก่อน):
 
+ไฟล์พร้อมใช้: [cat-card-scoring.patch.json](cat-card-scoring.patch.json)
+ใช้เนื้อหาไฟล์เป็น JSON request body ของ endpoint ข้างต้น โดยส่ง `Content-Type: application/json`
+และยืนยันตัวตนด้วยสิทธิ์ CMS ตามขั้นตอนขององค์กร ไฟล์นี้มีเฉพาะค่าที่ต้องการเปลี่ยน
+ไม่มี credentials และไม่ใช่ไฟล์นำเข้าแค็ตตาล็อกหรือไฟล์ที่เกมโหลดอัตโนมัติ
+
 ```json
 {
   "enabled": true,
@@ -151,6 +189,11 @@ E2E ใช้ fixture intercept ทุก request ไป Game Center รวม g
 
 ผลตรวจในเครื่องวันที่ 15 ตุลาคม 2026: TypeScript/production build ผ่าน,
 unit/component tests ผ่าน 70 กรณี และ browser E2E ผ่าน 48 กรณี
+ตรวจซ้ำรอบ audit หลังมีการปรับหน้าผลเกม: unit/component 70 กรณี, TypeScript/build
+และ E2E เฉพาะ `e2e/game-center.spec.ts` 13 กรณีผ่าน ไม่ได้รัน E2E ทุกไฟล์ซ้ำในรอบ audit นี้
+หลังแก้ข้อความนโยบาย Guest: TypeScript/build และ unit/component 70 กรณีผ่าน
+E2E integration 15 กรณีผ่าน รวมกรณี Guest ได้สิทธิ์และสมาชิกไม่ได้สิทธิ์ตาม receipt จำลอง
+ไม่ได้เปลี่ยนนโยบายส่วนกลาง ไม่ได้เผยแพร่การแก้ข้อความ และไม่ได้สร้างรอบ production
 มีการตรวจภาพอันดับบนมือถือและหน้าผลที่ 320 × 480 ด้วยข้อมูลจำลองแยกจาก production
 ผลทดสอบในเครื่องไม่ยืนยันค่าที่บันทึกใน CMS หรือการขึ้นอันดับของสมาชิกบน production
 
@@ -170,7 +213,8 @@ unit/component tests ผ่าน 70 กรณี และ browser E2E ผ่�
 7. เล่นจนหมดเวลา → Score ใน receipt ตรงหน้าจอ และ completed plays เพิ่มตามจริง
 8. Play again → เริ่มใหม่เพิ่มอีกหนึ่งครั้ง ไม่พากลับ sign-in โดยไม่จำเป็น
 9. ทดสอบสมาชิกที่สมัครก่อนเริ่มรอบ: accepted + rankingEligible=true และพบผลที่มีสิทธิ์ใน current leaderboard
-10. ทดสอบ Guest แยก: ผลอาจรับได้ แต่ไม่ขึ้นอันดับ/ไม่รับรางวัล และสมัครภายหลังไม่ยกผล Guest ย้อนหลัง
+10. ทดสอบ Guest แยกหลังยืนยันนโยบายกับผู้ดูแล: ตรวจ receipt `status`/`rankingEligible` และอันดับจริงให้สอดคล้องกัน
+    อย่าอนุมานว่า Guest ขึ้นหรือไม่ขึ้นอันดับจากประเภทบัญชีเพียงอย่างเดียว และตรวจสิทธิ์รางวัลแยกจากอันดับ
 11. บันทึกจำนวนรอบที่สร้างจริง บัญชีประเภทที่ใช้ และหลักฐาน ห้ามสร้างคะแนนเพื่อเติม Top 5
 
 ไม่ต้องแก้รอบอันดับกลาง ไม่เพิ่ม Gold ไม่เปลี่ยนนโยบายรางวัลของเกมอื่น
@@ -196,5 +240,6 @@ unit/component tests ผ่าน 70 กรณี และ browser E2E ผ่�
 
 SDK ดาวน์โหลด 2026-10-15 และเก็บโดยไม่แก้ source
 SHA256: `82079FE6B2EE2C7C7047F00E2803C952361E73C80133C7A6C2EF0AA95E59F056`
-OpenAPI คำอธิบาย endpoint leaderboard ยังกล่าวถึง Guests แต่เอกสาร ranking ปัจจุบันระบุชัดว่า
-Guest ไม่ขึ้นอันดับ โค้ดจึงไม่สรุป eligibility จาก memberKind เพียงอย่างเดียว และใช้ receipt/server rank เป็นหลัก
+OpenAPI คำอธิบาย endpoint leaderboard และ `meta.period.guestEligible=true` กล่าวถึงสิทธิ์ Guests
+แต่เอกสาร ranking ระบุ Guest ไม่ขึ้นอันดับ โค้ดจึงใช้ receipt/server rank เป็นหลัก
+และข้อความในเกมไม่ประกาศนโยบาย Guest แบบตายตัวจนกว่าทีมส่วนกลางจะยืนยัน
