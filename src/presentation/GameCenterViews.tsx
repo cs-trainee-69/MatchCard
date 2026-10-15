@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { LOCAL_GAME_CENTER, readLeaderboard, type Leaderboard, type Submission } from '../integration/gameCenter'
 import { PawIcon } from './PawIcon'
+import { formatRankingPeriod } from './rankingPeriod'
 
 function RankingMascot({ className, sizes }: { className: string; sizes: string }) {
   return <picture>
@@ -59,9 +60,7 @@ export function LeaderboardDialog({ onClose }: { onClose: () => void }) {
     return () => controller.abort()
   }, [attempt])
   const period = board?.meta.period
-  const formatDate = (value: string) => new Intl.DateTimeFormat('th-TH', {
-    dateStyle: 'medium', timeStyle: 'short', timeZone: period?.timezone ?? 'Asia/Bangkok',
-  }).format(new Date(value))
+  const periodCopy = period ? formatRankingPeriod(period) : null
   return <dialog ref={dialog} className="gc-dialog" lang="th" aria-labelledby="gc-ranking-title" onCancel={event => { event.preventDefault(); onClose() }}>
     <header className="gc-dialog-header">
       <button type="button" className="gc-button gc-close" onClick={onClose} autoFocus aria-label="ปิดอันดับ"><span aria-hidden="true">×</span></button>
@@ -70,7 +69,10 @@ export function LeaderboardDialog({ onClose }: { onClose: () => void }) {
       <h2 id="gc-ranking-title">{LOCAL_GAME_CENTER ? 'อันดับทดสอบในเครื่อง' : 'อันดับออนไลน์ Top 5'}</h2>
       <p className="gc-subtitle">คะแนนสูงสุด · โหมดปกติ</p>
     </header>
-    {period && <p className="gc-period">{formatDate(period.startsAt)} – {formatDate(period.endsAt)} ({period.timezone ?? 'Asia/Bangkok'})</p>}
+    {periodCopy && <p className="gc-period">
+      <span>อันดับประจำสัปดาห์ · {periodCopy.range}</span>
+      <span>เริ่มรอบใหม่ {periodCopy.nextDate} เวลา {periodCopy.nextTime} น. (เวลาไทย)</span>
+    </p>}
     {!board && !error && <div className="gc-empty" role="status"><PawIcon className="gc-empty-paw" /><p>กำลังโหลดอันดับ…</p></div>}
     {error && <div className="gc-empty" role="alert"><PawIcon className="gc-empty-paw" /><p>โหลดอันดับไม่สำเร็จ</p><button className="gc-button" type="button" onClick={() => setAttempt(value => value + 1)}>ลองโหลดอีกครั้ง</button></div>}
     {board && (board.data.length === 0 ? <div className="gc-empty" role="status"><PawIcon className="gc-empty-paw" /><p>{LOCAL_GAME_CENTER ? 'โหมดพัฒนาไม่โหลดอันดับจริง' : 'ยังไม่มีคะแนนในรอบนี้'}</p><span>กลับมาดูคะแนนกันอีกครั้งนะ</span></div> : <table className="gc-ranking">
@@ -83,7 +85,7 @@ export function LeaderboardDialog({ onClose }: { onClose: () => void }) {
           {!safeAvatar(player.avatar.url) && <span className="gc-avatar-fallback" aria-hidden="true"><PawIcon /></span>}
           <span className="gc-player-copy"><span className="gc-player-name">{player.displayName}</span><span className="gc-member">{player.memberKind === 'registered' ? 'สมาชิก' : 'Guest'}</span></span>
         </div></td>
-        <td>{player.score}</td>
+        <td>{player.score.replace(/\.0+$/, '')}</td>
       </tr>)}</tbody>
     </table>)}
     <p className="gc-ranking-note">สิทธิ์ขึ้นอันดับของแต่ละรอบเป็นไปตามผลตรวจจาก Game Center การรับผลสำเร็จไม่รับประกันอันดับหรือรางวัล</p>

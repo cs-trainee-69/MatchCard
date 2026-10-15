@@ -231,7 +231,7 @@ test('finishes at zero and offers a replay result', async ({ page }) => {
   await expect(page.getByText("Time's up")).toBeVisible()
   await expect(page.getByRole('button', { name: 'เล่นอีกครั้ง' })).toBeVisible()
   await expect(page.locator('[data-testid="result-overlay"]')).toBeVisible()
-  await expect(page.locator('.result-card')).toHaveCSS('background-image', /result-panel/)
+  await expect(page.locator('.result-card')).toHaveCSS('background-image', /linear-gradient/)
   await expect(page.locator('.result-card h2')).toHaveText("Time's up!")
   await expect(page.getByText('Nice work!', { exact: true })).toBeHidden()
   const resultBox = await page.locator('.result-card').boundingBox()

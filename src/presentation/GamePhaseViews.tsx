@@ -90,12 +90,7 @@ function ResultOverlay({ state, isNewHighScore, onReplay, status, footer }: { st
   return (
     <div className="overlay overlay-result" data-testid="result-overlay">
       <div className="overlay-card result-card">
-        <div className="result-sparkles" aria-hidden="true">
-          <span>✦</span>
-          <span>✧</span>
-          <span>✦</span>
-        </div>
-        <GameImage className="result-cat-card" src={CELEBRATION_IMAGE} sizes="112px" alt="" aria-hidden="true" />
+        <GameImage className="result-cat-card" src={CELEBRATION_IMAGE} sizes="90px" alt="" aria-hidden="true" />
         <div className="result-card-content">
           <p className="eyebrow">Game Result</p>
           <h2>Time's up!</h2>
