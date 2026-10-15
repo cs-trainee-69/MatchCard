@@ -32,5 +32,6 @@ if __name__ == "__main__":
     for name in ["golden-alert-panel", "result-panel"]:
         export(ASSETS / "ui" / f"{name}.png", (512, 1024, 1254))
     export(ASSETS / "ui" / "result-panel-v2.png", (512, 1024))
+    export(ASSETS / "ui" / "leaderboard-mascot.png", (128, 256, 384))
     files = list(OUTPUT.rglob("*.webp"))
     print(f"Generated {len(files)} images, {sum(file.stat().st_size for file in files):,} bytes")

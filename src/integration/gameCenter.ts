@@ -1,4 +1,10 @@
 import { GameCenterEntry } from './vendor/game-center.js'
+import { createLocalEntry } from './localGameCenter'
+
+// Vite enables this only for its development server, never a build or preview.
+// Test mode keeps API integration fixtures exercising the real SDK.
+export const LOCAL_GAME_CENTER = __CAT_CARD_LOCAL_DEVELOPMENT__ &&
+  typeof window !== 'undefined' && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
 
 // Verified against the existing catalog and play-config on 2026-10-15.
 export const GAME_CENTER_URL = 'https://center.game.gamification.in.th'
@@ -151,6 +157,9 @@ export class GameCenter {
 let center: GameCenter | undefined
 export function getGameCenter(): GameCenter {
   // One entry per browser page, even under Strict Mode's effect replay.
+  if (LOCAL_GAME_CENTER) return center ??= new GameCenter(createLocalEntry(), async () => ({
+    enabled: true, gameVersions: [GAME_VERSION], modes: [GAME_MODE], direction: 'desc',
+  }))
   return center ??= new GameCenter(new GameCenterEntry({ baseUrl: GAME_CENTER_URL, gameId: GAME_ID }))
 }
 
@@ -166,6 +175,7 @@ export type Leaderboard = {
   meta: { period?: { id?: string; startsAt: string; endsAt: string; timezone?: string } }
 }
 export async function readLeaderboard(signal: AbortSignal): Promise<Leaderboard> {
+  if (LOCAL_GAME_CENTER) return { data: [], meta: {} }
   const response = await fetch(`${GAME_CENTER_URL}/api/v1/games/${GAME_ID}/leaderboards/current/entries?mode=${GAME_MODE}&limit=5`, {
     credentials: 'omit', signal: AbortSignal.any([signal, AbortSignal.timeout(15000)]),
   })
