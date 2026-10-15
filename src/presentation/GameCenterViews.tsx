@@ -88,6 +88,5 @@ export function LeaderboardDialog({ onClose }: { onClose: () => void }) {
         <td>{player.score.replace(/\.0+$/, '')}</td>
       </tr>)}</tbody>
     </table>)}
-    <p className="gc-ranking-note">สิทธิ์ขึ้นอันดับของแต่ละรอบเป็นไปตามผลตรวจจาก Game Center การรับผลสำเร็จไม่รับประกันอันดับหรือรางวัล</p>
   </dialog>
 }

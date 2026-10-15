@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures'
 
 for (const viewport of [
+  { width: 320, height: 480 },
   { width: 393, height: 852 },
   { width: 515, height: 897 },
   { width: 1280, height: 900 },
@@ -15,6 +16,19 @@ for (const viewport of [
       const copy = overlay.querySelector('.start-floating-copy')!.getBoundingClientRect()
       return Math.abs(copy.y + copy.height / 2 - (frame.y + frame.height / 2))
     })).toBeLessThan(2)
+    const cat = page.locator('.start-cat')
+    await expect.poll(() => cat.evaluate(element => {
+      const box = element.getBoundingClientRect()
+      const frame = element.closest('.overlay-start')!.getBoundingClientRect()
+      return Math.abs(box.x + box.width / 2 - (frame.x + frame.width / 2))
+    })).toBeLessThan(2)
+    const catBox = await cat.boundingBox()
+    const titleBox = await page.locator('.start-floating-copy .eyebrow').boundingBox()
+    const frameBox = await page.locator('.overlay-start').boundingBox()
+    expect(Math.abs(catBox!.x + catBox!.width / 2 - (frameBox!.x + frameBox!.width / 2))).toBeLessThan(2)
+    expect(catBox!.y).toBeGreaterThanOrEqual(frameBox!.y)
+    expect(catBox!.y + catBox!.height).toBeLessThan(titleBox!.y)
+    if (viewport.width === 393) await page.screenshot({ path: test.info().outputPath('start-centered.png') })
   })
 }
 
