@@ -1,5 +1,22 @@
 import { test, expect } from './fixtures'
 
+for (const memberKind of ['guest', 'registered'] as const) {
+  test(`uses receipt eligibility independently of ${memberKind} membership`, async ({ page, centerMock }) => {
+    test.setTimeout(60000)
+    centerMock.memberKind = memberKind
+    centerMock.eligible = memberKind === 'guest'
+    await page.clock.install()
+    await page.goto('/')
+    await page.getByRole('button', { name: 'แตะเพื่อเริ่ม' }).click()
+    await expect(page.locator('.countdown-number')).toBeVisible()
+    await page.clock.runFor(126000)
+    await expect(page.getByText(centerMock.eligible ? 'รอบนี้มีสิทธิ์ขึ้นอันดับ' : 'รอบนี้ไม่มีสิทธิ์ขึ้นอันดับ', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'ดูอันดับออนไลน์' }).click()
+    await expect(page.getByRole('dialog')).toContainText('สิทธิ์ขึ้นอันดับของแต่ละรอบเป็นไปตามผลตรวจจาก Game Center')
+    await expect(page.getByRole('dialog')).not.toContainText('รอบทดลองของ Guest ไม่มีสิทธิ์ขึ้นอันดับ')
+  })
+}
+
 test('exchanges once under Strict Mode, strips grant, and does not start in lobby', async ({ page, centerMock }) => {
   await page.goto('/?gc_mode=default#gc_grant=ignored')
   await expect(page.getByRole('button', { name: 'แตะเพื่อเริ่ม' })).toBeEnabled()
@@ -73,7 +90,7 @@ test('finishes once, retains stable payload/key through retries, and replays in 
   const first = centerMock.results[0]
   expect(first.payload).toMatchObject({ score: '0', outcome: 'complete', stats: {}, gameVersion: '1.0.0' })
   expect(centerMock.results).toHaveLength(3)
-  await page.getByRole('button', { name: 'Play again' }).click()
+  await page.getByRole('button', { name: 'เล่นอีกครั้ง' }).click()
   await page.getByRole('button', { name: 'แตะเพื่อเริ่ม' }).click()
   await expect(page.locator('.countdown-number')).toBeVisible()
   expect(centerMock.starts).toBe(2)
@@ -82,7 +99,7 @@ test('finishes once, retains stable payload/key through retries, and replays in 
   await page.clock.runFor(126000)
   await expect(page.getByRole('button', { name: 'ลองส่งอีกครั้ง' })).toBeVisible()
   await page.getByRole('button', { name: 'ลองส่งอีกครั้ง' }).click()
-  await expect(page.getByText(/ครั้งที่ 2.*รับผลแล้ว/)).toBeVisible()
+  await expect(page.getByText(/รอบนี้ไม่มีสิทธิ์ขึ้นอันดับ/)).toBeVisible()
   const retried = centerMock.results.filter(result => result.session === first.session)
   expect(retried).toHaveLength(4)
   for (const result of retried) {
@@ -173,9 +190,9 @@ test('registered result sends earned Score and keeps replay clear of receipt on 
   await page.locator('.card-button').nth(pairs[0]).click()
   await page.locator('.card-button').nth(pairs[1]).click()
   await page.clock.runFor(121000)
-  await expect(page.getByText(/รับผลแล้ว · มีสิทธิ์จัดอันดับ/)).toBeVisible()
+  await expect(page.getByText(/รอบนี้มีสิทธิ์ขึ้นอันดับ/)).toBeVisible()
   expect(centerMock.results[0].payload.score).toBe('10')
-  const replay = page.getByRole('button', { name: 'Play again' })
+  const replay = page.getByRole('button', { name: 'เล่นอีกครั้ง' })
   await expect(replay).toBeVisible()
   const replayBox = await replay.boundingBox()
   const panelBox = await page.getByRole('complementary', { name: 'Game Center' }).boundingBox()
@@ -200,4 +217,32 @@ test('five-row ranking fits short mobile and desktop viewports', async ({ page, 
     await page.getByRole('button', { name: 'ปิดอันดับ' }).click()
     await expect(dialog).toHaveCount(0)
   }
+})
+
+test('result keeps both actions inside the themed panel and rankings return focus across viewport sizes', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.clock.install()
+  await page.goto('/')
+  await page.getByRole('button', { name: 'แตะเพื่อเริ่ม' }).click()
+  await expect(page.locator('.countdown-number')).toBeVisible()
+  await page.clock.runFor(126000)
+  const result = page.locator('.result-card')
+  await expect(result.getByText('รอบนี้ไม่มีสิทธิ์ขึ้นอันดับ')).toBeVisible()
+  await expect(result).not.toContainText('บันทึกคะแนนแล้ว')
+  await expect(result).not.toContainText('รับผลแล้ว')
+  for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 480 }, { width: 1280, height: 720 }]) {
+    await page.setViewportSize(viewport)
+    const ranking = result.getByRole('button', { name: 'ดูอันดับออนไลน์' })
+    const replay = result.getByRole('button', { name: 'เล่นอีกครั้ง' })
+    await expect(replay).toBeVisible()
+    expect(await page.getByTestId('result-overlay').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    await ranking.click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(ranking).toBeFocused()
+    await page.getByTestId('result-overlay').evaluate(element => { element.scrollTop = 0 })
+    await page.screenshot({ path: test.info().outputPath(`result-${viewport.width}x${viewport.height}.png`) })
+  }
+  await result.getByRole('button', { name: 'เล่นอีกครั้ง' }).click()
+  await expect(page.getByRole('button', { name: 'แตะเพื่อเริ่ม' })).toBeVisible()
 })

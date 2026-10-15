@@ -86,7 +86,7 @@ function PauseOverlay({ onResume }: { onResume: () => void }) {
   )
 }
 
-function ResultOverlay({ state, isNewHighScore, onReplay, footer }: { state: GameState; isNewHighScore: boolean; onReplay: () => void; footer: ReactNode }) {
+function ResultOverlay({ state, isNewHighScore, onReplay, status, footer }: { state: GameState; isNewHighScore: boolean; onReplay: () => void; status: ReactNode; footer: ReactNode }) {
   return (
     <div className="overlay overlay-result" data-testid="result-overlay">
       <div className="overlay-card result-card">
@@ -98,7 +98,7 @@ function ResultOverlay({ state, isNewHighScore, onReplay, footer }: { state: Gam
         <GameImage className="result-cat-card" src={CELEBRATION_IMAGE} sizes="112px" alt="" aria-hidden="true" />
         <div className="result-card-content">
           <p className="eyebrow">Game Result</p>
-          <h2>Time's up</h2>
+          <h2>Time's up!</h2>
           {isNewHighScore && <p className="new-high-score"><span aria-hidden="true">✦</span> New High Score <span aria-hidden="true">✦</span></p>}
           <div className="result-grid">
             <div className="result-stat" data-stat="score">
@@ -114,13 +114,14 @@ function ResultOverlay({ state, isNewHighScore, onReplay, footer }: { state: Gam
               <strong>{state.round}</strong>
             </div>
           </div>
-          <button className="primary-button result-replay-button" type="button" onClick={onReplay}>
+          <div className="result-status" lang="th">{status}</div>
+          <button className="primary-button result-replay-button" type="button" onClick={onReplay} lang="th">
             <span className="result-button-paw" aria-hidden="true"><PawIcon className="paw-icon" /></span>
-            <span>Play again</span>
+            <span>เล่นอีกครั้ง</span>
           </button>
+          {footer}
         </div>
       </div>
-      {footer}
     </div>
   )
 }
@@ -136,11 +137,12 @@ export type GamePhaseViewsProps = {
   onStart: () => void
   startDisabled: boolean
   resultFooter: ReactNode
+  resultStatus: ReactNode
   onResume: () => void
   onReplay: () => void
 }
 
-export function GamePhaseViews({ state, config, startingHighScore, onStart, startDisabled, onResume, onReplay, resultFooter }: GamePhaseViewsProps) {
+export function GamePhaseViews({ state, config, startingHighScore, onStart, startDisabled, onResume, onReplay, resultFooter, resultStatus }: GamePhaseViewsProps) {
   const warningLevel = getWarningLevel(state)
 
   return (
@@ -152,7 +154,7 @@ export function GamePhaseViews({ state, config, startingHighScore, onStart, star
       {state.phase === 'paused' && <PauseOverlay onResume={onResume} />}
       {warningLevel !== 'none' && <UrgencyVignette level={warningLevel} />}
       {state.phase === 'transitioning-round' && <RoundCelebration state={state} />}
-      {state.phase === 'finished' && <ResultOverlay state={state} isNewHighScore={state.score > startingHighScore} onReplay={onReplay} footer={resultFooter} />}
+      {state.phase === 'finished' && <ResultOverlay state={state} isNewHighScore={state.score > startingHighScore} onReplay={onReplay} status={resultStatus} footer={resultFooter} />}
     </>
   )
 }

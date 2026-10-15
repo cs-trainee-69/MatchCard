@@ -1,10 +1,14 @@
-.gc-panel { position: absolute; z-index: 5; bottom: max(56px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(90%, 390px); max-height: 23dvh; overflow: auto; padding: 8px; border-radius: 14px; background: #2b1723ed; color: #fff1e1; text-align: center; font-size: .75rem; }
+.gc-panel { position: absolute; z-index: 5; bottom: max(56px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(86%, 330px); max-height: 23dvh; overflow: auto; padding: 10px 14px; border: 1px solid #f3bc91; border-radius: 22px; background: #fff3dfed; color: #704654; box-shadow: 0 6px 18px #34172533; text-align: center; font-size: .75rem; }
 .gc-panel p { margin: 4px 0 7px; }
-.overlay-result { display: flex; flex-direction: column; justify-content: safe center; align-items: center; gap: 12px; padding-top: 60px; overflow-y: auto; }
+.overlay-result { display: flex; flex-direction: column; justify-content: safe center; align-items: center; padding: max(70px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom)); overflow-y: auto; }
 .overlay-result .result-card { flex: 0 0 auto; }
-.overlay-result .gc-panel { position: relative; left: auto; bottom: auto; transform: none; flex: 0 0 auto; width: min(100%, 390px); max-height: none; }
 .gc-button { padding: 8px 12px; border: 1px solid #f7c986; border-radius: 12px; color: #ffe3af; background: #4b2a3a; cursor: pointer; font: inherit; }
 .gc-button:focus-visible { outline: 3px solid #ffe28d; outline-offset: 3px; }
+.gc-ranking-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 48px; border: 2px solid #f6b84e; border-radius: 999px; color: #56334e; background: linear-gradient(180deg, #fffdf3, #ffedd6); box-shadow: inset 0 2px 0 #fff, 0 4px 0 #edb572, 0 5px 10px #b3743b18; font-size: .95rem; font-weight: 700; transition: transform 150ms ease, filter 150ms ease; }
+.gc-ranking-button:hover { filter: brightness(1.04); transform: translateY(-1px); }
+.gc-ranking-button:active { transform: translateY(2px); box-shadow: inset 0 2px 0 #fff, 0 2px 0 #edb572; }
+.gc-trophy { flex: 0 0 27px; width: 27px; height: 27px; }
+.gc-ranking-button:focus-visible, .result-replay-button:focus-visible { outline: 3px solid #70435d; outline-offset: 4px; }
 .start-prompt:disabled { opacity: .6; cursor: wait; }
 .gc-submission { display: grid; justify-items: center; gap: 5px; margin-bottom: 6px; }
 .gc-local-note, .gc-ranking-note { font-size: .72rem; opacity: .85; }

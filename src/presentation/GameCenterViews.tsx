@@ -1,14 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { readLeaderboard, type Leaderboard, type Submission } from '../integration/gameCenter'
 
+export function RankingButton({ onClick }: { onClick: () => void }) {
+  return <button type="button" className="gc-button gc-ranking-button" onClick={onClick} lang="th">
+    <svg className="gc-trophy" viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M9 5H4v5c0 5 4 7 8 7M23 5h5v5c0 5-4 7-8 7" fill="none" stroke="#bc741e" strokeWidth="3" strokeLinejoin="round" />
+      <path d="M8 3h16v8c0 6-3 9-8 9s-8-3-8-9Z" fill="#ffd46b" stroke="#bc741e" strokeWidth="2" />
+      <path d="M12 6h2v7h-2Z" fill="#fff4c8" />
+      <path d="M16 20v6m-6 3h12l-2-3h-8Z" fill="#ffd46b" stroke="#bc741e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+    <span>ดูอันดับออนไลน์</span>
+  </button>
+}
+
 export function SubmissionStatus({ submission, retry }: { submission: Submission; retry: (id: number) => void }) {
   const labels = {
     sending: 'กำลังส่งผล…', error: 'ส่งผลไม่สำเร็จ', pending: 'ส่งผลแล้ว · รอตรวจสอบ',
-    accepted: submission.rankingEligible ? 'รับผลแล้ว · มีสิทธิ์จัดอันดับ' : 'รับผลแล้ว · ไม่มีสิทธิ์ขึ้นอันดับ',
+    accepted: submission.rankingEligible ? 'รอบนี้มีสิทธิ์ขึ้นอันดับ' : 'รอบนี้ไม่มีสิทธิ์ขึ้นอันดับ',
     rejected: 'ผลไม่ผ่านการตรวจสอบ', quarantined: 'ผลถูกพักไว้เพื่อตรวจสอบ', deleted: 'ผลถูกนำออกจากระบบ',
   }
   return <div className="gc-submission" role="status">
-    <span>ครั้งที่ {submission.id} · {submission.score} คะแนน · {labels[submission.status]}</span>
+    <span>{submission.status === 'accepted' ? labels.accepted : `ครั้งที่ ${submission.id} · ${labels[submission.status]}`}</span>
     {submission.status === 'error' && <button type="button" className="gc-button" onClick={() => retry(submission.id)}>ลองส่งอีกครั้ง</button>}
   </div>
 }
@@ -67,6 +79,6 @@ export function LeaderboardDialog({ onClose }: { onClose: () => void }) {
         <td>{player.score}</td>
       </tr>)}</tbody>
     </table>)}
-    <p className="gc-ranking-note">รอบทดลองของ Guest ไม่มีสิทธิ์ขึ้นอันดับ การรับผลสำเร็จไม่รับประกันอันดับหรือรางวัล</p>
+    <p className="gc-ranking-note">สิทธิ์ขึ้นอันดับของแต่ละรอบเป็นไปตามผลตรวจจาก Game Center การรับผลสำเร็จไม่รับประกันอันดับหรือรางวัล</p>
   </dialog>
 }
