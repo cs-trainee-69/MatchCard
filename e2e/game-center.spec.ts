@@ -112,7 +112,7 @@ for (const count of [0, 1, 5]) {
   test(`Top 5 renders ${count} rows, server ties, safe names and focus on mobile`, async ({ page, centerMock }) => {
     centerMock.rows = Array.from({ length: count }, (_, index) => ({
       memberId: `fixture-${index}`, displayName: index === 0 ? '<img onerror=alert(1)> ชื่อผู้เล่นยาวมากสำหรับทดสอบการแสดงผลบนโทรศัพท์' : `ผู้เล่น ${index}`,
-      memberKind: 'registered', rank: [1, 1, 2, 3, 4][index], score: String(100 - index),
+      memberKind: 'registered', rank: [1, 1, 2, 3, 4][index], score: count === 1 ? '47.000000' : `${100 - index}.000000`,
       avatar: { url: 'https://center.game.gamification.in.th/fixture-avatar.svg', label: 'Fixture' },
     }))
     await page.goto('/')
@@ -124,11 +124,13 @@ for (const count of [0, 1, 5]) {
     await expect(dialog.getByRole('button', { name: 'ปิดอันดับ' })).toBeFocused()
     if (count) {
       await expect(dialog.locator('tbody tr')).toHaveCount(count)
+      await expect(dialog.locator('tbody tr').first().locator('td').last()).toHaveText(count === 1 ? '47' : '100')
       await expect(dialog.locator('.gc-player-name').first()).toContainText('<img onerror=alert(1)>')
       await expect(dialog.locator('tbody tr img')).toHaveCount(count)
       if (count === 5) expect(await dialog.locator('.gc-rank').allTextContents()).toEqual(['1', '1', '2', '3', '4'])
     } else await expect(dialog).toContainText('ยังไม่มีคะแนน')
-    await expect(dialog).toContainText('19 ต.ค.')
+    await expect(dialog.locator('.gc-period')).toContainText('อันดับประจำสัปดาห์ · 12–18 ต.ค.')
+    await expect(dialog.locator('.gc-period')).toContainText('เริ่มรอบใหม่ 19 ต.ค. เวลา 00:00 น. (เวลาไทย)')
     expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
     await page.screenshot({ path: test.info().outputPath(count === 5 ? 'ranking-mobile.png' : `ranking-${count}-rows.png`) })
     await page.keyboard.press('Escape')
@@ -193,10 +195,19 @@ test('registered result sends earned Score and keeps replay clear of receipt on 
   await page.locator('.card-button').nth(pairs[1]).click()
   await page.clock.runFor(121000)
   await expect(page.getByText(/รอบนี้มีสิทธิ์ขึ้นอันดับ/)).toBeVisible()
+  await page.clock.runFor(500)
   expect(centerMock.results[0].payload.score).toBe('10')
   const replay = page.getByRole('button', { name: 'เล่นอีกครั้ง' })
   await expect(replay).toBeVisible()
   const replayBox = await replay.boundingBox()
+  const frameBox = await page.locator('.result-card').boundingBox()
+  const mascotBox = await page.locator('.result-cat-card').boundingBox()
+  // Paws perch on the outer top-right rim, above the inset stitching.
+  expect(mascotBox!.y + mascotBox!.height).toBeLessThanOrEqual(frameBox!.y + 8)
+  expect(mascotBox!.x).toBeGreaterThan(frameBox!.x + frameBox!.width / 2)
+  expect(mascotBox!.x + mascotBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width)
+  expect(replayBox!.x).toBeGreaterThanOrEqual(frameBox!.x + 30)
+  expect(replayBox!.x + replayBox!.width).toBeLessThanOrEqual(frameBox!.x + frameBox!.width - 30)
   const panelBox = await page.getByRole('complementary', { name: 'Game Center' }).boundingBox()
   expect(replayBox!.y + replayBox!.height).toBeLessThanOrEqual(panelBox!.y)
   await page.screenshot({ path: test.info().outputPath('result-short-mobile.png') })

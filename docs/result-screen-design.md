@@ -1,5 +1,13 @@
 # Result screen design
 
+## Layout correction: unobstructed stitching
+
+The active frame is now drawn with CSS: a cream surface, pink rim and a separate dashed inset border. The original generated panel assets below are retained as design history, but are no longer displayed or preloaded. This removes the baked-in paw and stars that covered parts of the stitching and prevents distortion when content height changes.
+
+The celebration cat perches on the outer top-right rim, entirely above the inset stitching. Text and actions use at least 34px of inset from the panel edge; the ranking mascot is reduced to 34px inside the secondary button. The device-only note and eligibility copy use larger type. Stat labels reserve equal height even when High Score wraps. The overlay scrolls on short screens.
+
+Regression verification measures that the cat sits on the right half with its paws no more than 8px below the outer top edge and that the replay button stays at least 30px inside both sides, in addition to checking ranking and replay across viewport sizes.
+
 ## Reference and layout
 
 The approved concept uses one cream panel with a glossy coral pink rim, peach stitching, an orange cat, a gold paw and stars. The successful-submission badge (บันทึกคะแนนแล้ว) is omitted.

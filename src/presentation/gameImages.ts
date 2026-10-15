@@ -50,6 +50,5 @@ export async function prepareGameImages(cardSizes: string): Promise<void> {
   const panelWidth = window.devicePixelRatio > 2 ? 1254 : window.devicePixelRatio > 1 ? 1024 : 512
   await Promise.all([
     prepareImage(`/optimized/ui/golden-alert-panel-${panelWidth}.webp`, '', false),
-    prepareImage(`/optimized/ui/result-panel-v2-${Math.min(panelWidth, 1024)}.webp`, '', false),
   ])
 }
